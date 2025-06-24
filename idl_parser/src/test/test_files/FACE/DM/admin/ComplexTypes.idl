@@ -1,0 +1,38 @@
+#ifndef FACE_DM_ADMIN_COMPLEXTYPES
+#define FACE_DM_ADMIN_COMPLEXTYPES
+
+#include <FACE/DM/admin/Kind_Tea_Kind_Enum_Enumeration.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_Long.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_String.idl>
+#include <FACE/DM/admin/Position_WGS84PositionMeasurement_IDLStruct.idl>
+
+module FACE {
+    module DM {
+        module admin {
+            module T_ComplexTypes {
+                typedef Kind_Tea_Kind_Enum_Enumeration Array_2_Kind_Tea_Kind_Enum_Enumeration[2];
+                typedef Mass_MassMeasurement_Long Array_2_Mass_MassMeasurement_Long[2];
+                typedef Mass_MassMeasurement_String Array_2_Mass_MassMeasurement_String[2];
+                typedef Position_WGS84PositionMeasurement_IDLStruct Array_2_Position_WGS84PositionMeasurement_IDLStruct[2];
+                typedef sequence<Kind_Tea_Kind_Enum_Enumeration, 3> Seq_3_Kind_Tea_Kind_Enum_Enumeration;
+                typedef sequence<Mass_MassMeasurement_Long, 3> Seq_3_Mass_MassMeasurement_Long;
+                typedef sequence<Mass_MassMeasurement_String, 3> Seq_3_Mass_MassMeasurement_String;
+                typedef sequence<Position_WGS84PositionMeasurement_IDLStruct, 3> Seq_3_Position_WGS84PositionMeasurement_IDLStruct;
+
+                struct ComplexTypes {
+                    Array_2_Mass_MassMeasurement_Long long_array;
+                    Array_2_Mass_MassMeasurement_String string_array;
+                    Array_2_Kind_Tea_Kind_Enum_Enumeration enum_array;
+                    Array_2_Position_WGS84PositionMeasurement_IDLStruct compound_array;
+                    Seq_3_Mass_MassMeasurement_Long long_sequence;
+                    Seq_3_Mass_MassMeasurement_String string_sequence;
+                    Seq_3_Kind_Tea_Kind_Enum_Enumeration enum_sequence;
+                    Seq_3_Position_WGS84PositionMeasurement_IDLStruct compound_sequence;
+                };
+            };
+            typedef T_ComplexTypes::ComplexTypes ComplexTypes;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_COMPLEXTYPES

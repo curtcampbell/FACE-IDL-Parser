@@ -1,0 +1,19 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERSETOPERATIONALSTATE
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERSETOPERATIONALSTATE
+
+#include <FACE/DM/system_driver_interface/SystemDriverOperationalStateEnum.idl>
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            module T_SystemDriverSetOperationalState {
+                struct SystemDriverSetOperationalState {
+                    SystemDriverOperationalStateEnum operationState;
+                };
+            };
+            typedef T_SystemDriverSetOperationalState::SystemDriverSetOperationalState SystemDriverSetOperationalState;
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERSETOPERATIONALSTATE

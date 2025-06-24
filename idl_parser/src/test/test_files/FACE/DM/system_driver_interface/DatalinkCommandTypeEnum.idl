@@ -1,0 +1,14 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_DATALINKCOMMANDTYPEENUM
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_DATALINKCOMMANDTYPEENUM
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            enum DatalinkCommandTypeEnum {
+                SET_CONFIGURATION
+            };
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_DATALINKCOMMANDTYPEENUM

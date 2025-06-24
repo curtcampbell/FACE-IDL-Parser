@@ -1,0 +1,12 @@
+#ifndef FACE_DM_ADMIN_MASS_MASSMEASUREMENT_ULONG
+#define FACE_DM_ADMIN_MASS_MASSMEASUREMENT_ULONG
+
+module FACE {
+    module DM {
+        module admin {
+            typedef unsigned long Mass_MassMeasurement_ULong;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_MASS_MASSMEASUREMENT_ULONG

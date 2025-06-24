@@ -1,0 +1,27 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMAND
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMAND
+
+#include <FACE/DM/system_driver_interface/SystemDriverSetOperationalState.idl>
+#include <FACE/DM/system_driver_interface/SystemDriverCommandTypeEnum.idl>
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            module T_SystemDriverCommand {
+                union SystemDriverCommandDataUnion;
+
+                union SystemDriverCommandDataUnion swtich (SystemDriverCommandTypeEnum) {
+                      case :
+                          SystemDriverSetOperationalState setOperationalState;
+                };
+
+                struct SystemDriverCommand {
+                    SystemDriverCommandDataUnion commandData;
+                };
+            };
+            typedef T_SystemDriverCommand::SystemDriverCommand SystemDriverCommand;
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMAND

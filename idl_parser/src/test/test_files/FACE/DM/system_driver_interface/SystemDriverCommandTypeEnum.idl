@@ -1,0 +1,14 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMANDTYPEENUM
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMANDTYPEENUM
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            enum SystemDriverCommandTypeEnum {
+                SET_OPERATIONAL_STATE
+            };
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERCOMMANDTYPEENUM

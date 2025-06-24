@@ -1,0 +1,15 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERREQUESTENUMERATION
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERREQUESTENUMERATION
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            enum SystemDriverRequestEnumeration {
+                CHANGE_STATE,
+                REQUEST_LIST
+            };
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMDRIVERREQUESTENUMERATION

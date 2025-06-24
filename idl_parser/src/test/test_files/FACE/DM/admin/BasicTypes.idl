@@ -1,0 +1,40 @@
+#ifndef FACE_DM_ADMIN_BASICTYPES
+#define FACE_DM_ADMIN_BASICTYPES
+
+#include <FACE/DM/admin/Position_WGS84PositionMeasurement_IDLStruct.idl>
+
+#include <FACE/DM/admin/Mass_MassMeasurement_Char.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_Double.idl>
+#include <FACE/DM/admin/mass_Float.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_Long.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_Short.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_ULong.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_UShort.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_Octet.idl>
+#include <FACE/DM/admin/Mass_MassMeasurement_String.idl>
+#include <FACE/DM/admin/Kind_Tea_Kind_Enum_Enumeration.idl>
+
+module FACE {
+    module DM {
+        module admin {
+            module T_BasicTypes {
+                struct BasicTypes {
+                    Mass_MassMeasurement_Char test_Char;
+                    Mass_MassMeasurement_Double test_Double;
+                    mass_Float test_Float;
+                    Mass_MassMeasurement_Long test_Long;
+                    Mass_MassMeasurement_Short test_Short;
+                    Mass_MassMeasurement_ULong test_ULong;
+                    Mass_MassMeasurement_UShort test_UShort;
+                    Mass_MassMeasurement_Octet test_Octet;
+                    Mass_MassMeasurement_String test_String;
+                    Kind_Tea_Kind_Enum_Enumeration test_Enum;
+                    Position_WGS84PositionMeasurement_IDLStruct test_Compound;
+                };
+            };
+            typedef T_BasicTypes::BasicTypes BasicTypes;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_BASICTYPES

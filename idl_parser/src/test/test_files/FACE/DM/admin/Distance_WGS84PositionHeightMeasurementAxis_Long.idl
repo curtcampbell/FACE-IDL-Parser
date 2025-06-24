@@ -1,0 +1,12 @@
+#ifndef FACE_DM_ADMIN_DISTANCE_WGS84POSITIONHEIGHTMEASUREMENTAXIS_LONG
+#define FACE_DM_ADMIN_DISTANCE_WGS84POSITIONHEIGHTMEASUREMENTAXIS_LONG
+
+module FACE {
+    module DM {
+        module admin {
+            typedef long Distance_WGS84PositionHeightMeasurementAxis_Long;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_DISTANCE_WGS84POSITIONHEIGHTMEASUREMENTAXIS_LONG

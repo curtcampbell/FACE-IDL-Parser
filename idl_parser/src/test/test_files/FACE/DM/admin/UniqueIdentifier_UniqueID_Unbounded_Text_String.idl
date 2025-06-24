@@ -1,0 +1,14 @@
+#ifndef FACE_DM_ADMIN_UNIQUEIDENTIFIER_UNIQUEID_UNBOUNDED_TEXT_STRING
+#define FACE_DM_ADMIN_UNIQUEIDENTIFIER_UNIQUEID_UNBOUNDED_TEXT_STRING
+
+
+module FACE {
+    module DM {
+        module admin {
+            typedef string UniqueIdentifier_UniqueID_Unbounded_Text_String;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_UNIQUEIDENTIFIER_UNIQUEID_UNBOUNDED_TEXT_STRING
+

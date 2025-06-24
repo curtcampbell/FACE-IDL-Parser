@@ -1,0 +1,12 @@
+#ifndef FACE_DM_ADMIN_MASS_MASSMEASUREMENT_STRING
+#define FACE_DM_ADMIN_MASS_MASSMEASUREMENT_STRING
+
+module FACE {
+    module DM {
+        module admin {
+            typedef string Mass_MassMeasurement_String;
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_MASS_MASSMEASUREMENT_STRING

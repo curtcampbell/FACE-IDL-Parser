@@ -1,0 +1,16 @@
+#ifndef FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMEVENTENUM
+#define FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMEVENTENUM
+
+module FACE {
+    module DM {
+        module system_driver_interface {
+            enum SystemEventEnum {
+                SYSTEM_DISCOVERED,
+                LINK_LOST,
+                LINK_ESTABLISHED
+            };
+        };
+    };
+};
+
+#endif // FACE_DM_SYSTEM_DRIVER_INTERFACE_SYSTEMEVENTENUM

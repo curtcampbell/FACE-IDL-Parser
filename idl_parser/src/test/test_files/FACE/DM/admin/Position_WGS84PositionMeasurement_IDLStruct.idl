@@ -1,0 +1,20 @@
+#ifndef FACE_DM_ADMIN_POSITION_WGS84POSITIONMEASUREMENT_IDLSTRUCT
+#define FACE_DM_ADMIN_POSITION_WGS84POSITIONMEASUREMENT_IDLSTRUCT
+
+#include <FACE/DM/admin/Distance_WGS84PositionHeightMeasurementAxis_Long.idl>
+#include <FACE/DM/admin/Angle_WGS84PositionLatitudeMeasurementAxis_Long.idl>
+#include <FACE/DM/admin/Angle_WGS84PositionLongitudeMeasurementAxis_Long.idl>
+
+module FACE {
+    module DM {
+        module admin {
+            struct Position_WGS84PositionMeasurement_IDLStruct {
+                Distance_WGS84PositionHeightMeasurementAxis_Long Position_WGS84PositionHeightMeasurementAxis_IDLStruct;
+                Angle_WGS84PositionLatitudeMeasurementAxis_Long Position_WGS84PositionLatitudeMeasurementAxis_IDLStruct;
+                Angle_WGS84PositionLongitudeMeasurementAxis_Long Position_WGS84PositionLongitudeMeasurementAxis_IDLStruct;
+            };
+        };
+    };
+};
+
+#endif // FACE_DM_ADMIN_POSITION_WGS84POSITIONMEASUREMENT_IDLSTRUCT
