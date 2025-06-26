@@ -1,0 +1,158 @@
+// IDL file demonstrating various typedef statements
+// based on the type_dcl rule in the FACE_IDL.g4 grammar.
+
+module TypedefExamples {
+
+    // ========================================================================
+    // 1. Typedefs for Base (Primitive) Types
+    // These create aliases for the fundamental IDL data types.
+    // ========================================================================
+
+    // --- Integer Types ---
+    typedef short                       MyShort;
+    typedef long                        MyLong;
+    typedef long long                   MyLongLong;
+    typedef int8                        MyInt8;
+    typedef int16                       MyInt16;
+    typedef int32                       MyInt32;
+    typedef int64                       MyInt64;
+
+    typedef unsigned short              MyUnsignedShort;
+    typedef unsigned long               MyUnsignedLong;
+    typedef unsigned long long          MyUnsignedLongLong;
+    typedef uint8                       MyUInt8;
+    typedef uint16                      MyUInt16;
+    typedef uint32                      MyUInt32;
+    typedef uint64                      MyUInt64;
+
+    // --- Floating Point Types ---
+    typedef float                       MyFloat;
+    typedef double                      MyDouble;
+    typedef long double                 MyLongDouble;
+
+    // --- Character Types ---
+    typedef char                        MyChar;
+    typedef wchar                       MyWChar;
+
+    // --- Other Base Types ---
+    typedef boolean                     MyBoolean;
+    typedef octet                       MyOctet;
+    typedef any                         MyAny;
+    typedef Object                      MyObjectRef; // Alias for the base object reference
+
+    // ========================================================================
+    // 2. Typedefs for Template and Constructed Types
+    // These types are constructed from other types, often using templates.
+    // ========================================================================
+
+    // --- String and Wide String Types ---
+    typedef string                      UnboundedString;
+    typedef string<128>                 BoundedString; // A string with a max length of 128
+    typedef wstring                     UnboundedWString;
+    typedef wstring<256>                BoundedWString;
+
+    // --- Sequence Types (like a dynamic array or vector) ---
+    typedef sequence<long>              UnboundedLongSequence;
+    typedef sequence<MyFloat, 10>       BoundedFloatSequence; // A sequence with a max size of 10
+
+    // --- Fixed Point Type ---
+    // Represents a fixed-point decimal number: fixed<total_digits, decimal_places>
+    typedef fixed<12, 4>                MyFixedPoint;
+
+    // ========================================================================
+    // 3. Typedefs with Inline Type Definitions
+    // You can define a struct, union, or enum directly within a typedef.
+    // ========================================================================
+
+    // --- Struct ---
+    typedef struct Point {
+        long x;
+        long y;
+    } Point_t;
+
+    // --- Union ---
+    // The type in `switch()` must be an integer, char, boolean, or enum.
+    typedef union DataValue switch (long) {
+        case 1:  long l_val;
+        case 2:  float f_val;
+        default: octet o_val;
+    } DataValue_t;
+
+    // --- Enum ---
+    typedef enum Color {
+        RED,
+        GREEN,
+        BLUE
+    } Color_t;
+
+    // ========================================================================
+    // 4. Typedefs for Existing User-Defined Types
+    // This shows creating an alias for a type that is already defined.
+    // ========================================================================
+
+    struct Position {
+        float x;
+        float y;
+        float z;
+    };
+
+    // Create a new alias 'Location' for the 'Position' struct defined above.
+    typedef Position Location;
+
+    // ========================================================================
+    // 5. Forward Declarations and Typedefs
+    // A type can be forward-declared and used in a typedef before its
+    // full definition is provided. This is from the 'constr_forward_dcl' rule.
+    // ========================================================================
+
+    // Forward-declare a struct.
+    struct IncompleteStruct;
+
+    // You can create a typedef for the incomplete type. This is useful
+    // for defining interfaces that use pointers or references to it.
+    typedef IncompleteStruct IncompleteStruct_t;
+
+    // The full definition must be provided later in the compilation unit.
+    struct IncompleteStruct {
+        long value;
+    };
+
+    // ========================================================================
+    // 6. Typedefs for Arrays
+    // Arrays have a fixed size defined at compile time.
+    // ========================================================================
+
+    // Typedef for an array of a primitive type.
+    typedef long Vector3[3];
+
+    // Typedef for an array of a user-defined type.
+    typedef Point_t PointCloud[100];
+
+    // ========================================================================
+    // 7. Typedefs for Bit-level Types
+    // These are part of the extended CORBA specification.
+    // ========================================================================
+
+    // --- Bitmask (a set of named bit flags) ---
+    typedef bitmask Permissions {
+        Read,
+        Write,
+        Execute
+    } Permissions_t;
+
+    // --- Bitset (a struct with bit-level packing) ---
+    typedef bitset Flags {
+        bitfield<1>                 is_enabled;
+        bitfield<3, unsigned short> mode;
+        bitfield<1>                 has_error;
+    } Flags_t;
+
+    // ========================================================================
+    // 8. Native Types
+    // The 'native' keyword declares an opaque type whose implementation
+    // is defined in the target language. This is not a typedef, but is
+    // another form of the 'type_dcl' grammar rule.
+    // ========================================================================
+    native OpaqueHandle;
+    native FileDescriptor;
+};
