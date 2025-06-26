@@ -5,14 +5,17 @@ import java.util.Set;
 
 public class Typedef extends ScopedObjectBase{
 
+
     public enum DataTypes {
         // Simple types
         SignedShort,
         SignedLong,
         SignedLongLong,
+        SignedTiny,
         UnsignedShort,
         UnsignedLong,
         UnsignedLongLong,
+        UnsignedTiny,
         Float,
         Double,
         LongDouble,

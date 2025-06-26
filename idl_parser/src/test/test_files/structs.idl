@@ -3,6 +3,8 @@
 
 module StructExamples {
 
+    const int16 my_const = 240;
+
     // Example 1: A basic struct with primitive members.
     // This tests the fundamental structure with a simple member_list.
     struct Point {

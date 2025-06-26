@@ -2,6 +2,7 @@ package face.idl.model.v4;
 
 public interface IScopedObject {
     enum Kind {
+        Constant,
         Module,
         Typedef,
         Struct,

@@ -12,9 +12,7 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.Stack;
 
 public class FaceDataModelBuilder extends FACE_IDLBaseListener {
@@ -612,6 +610,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void enterConst_dcl(FACE_IDLParser.Const_dclContext ctx) {
         super.enterConst_dcl(ctx);
+
+        //Process on exit since we will be using side effects of processing of child tokens.
     }
 
     /**
@@ -620,6 +620,31 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitConst_dcl(FACE_IDLParser.Const_dclContext ctx) {
         super.exitConst_dcl(ctx);
+        var id = ctx.identifier().getText();
+
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error here.");
+        }
+
+        var currentScope = _scopeStack.peek();
+
+        if (currentScope.containsId(id)){
+            //Error here.
+            throw new RuntimeException("ID already defined.  I know not enough information.");
+        }
+
+        if(currentScope.getKind() == IScopedObject.Kind.Module) {
+            var newConstant = new Constant(id);
+            newConstant.setDataType(dataTypeRegister);
+            newConstant.setExpression(ctx.const_expr().getText());
+            currentScope.addScopedObject(newConstant);
+
+            //Set the register back to None so its clear for the next process.
+            dataTypeRegister = SimpleDataTypes.None;
+        } else {
+            throw new RuntimeException("Unexpected coding error here.");
+        }
+
     }
 
     /**
@@ -1039,6 +1064,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitFloating_pt_type(FACE_IDLParser.Floating_pt_typeContext ctx) {
         super.exitFloating_pt_type(ctx);
+        dataTypeRegister = SimpleDataTypes.Float;
     }
 
     /**
@@ -1063,6 +1089,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void enterSigned_int(FACE_IDLParser.Signed_intContext ctx) {
         super.enterSigned_int(ctx);
+
     }
 
     /**
@@ -1087,6 +1114,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_tiny_int(FACE_IDLParser.Signed_tiny_intContext ctx) {
         super.exitSigned_tiny_int(ctx);
+
+        dataTypeRegister = SimpleDataTypes.SignedTiny;
     }
 
     /**
@@ -1103,6 +1132,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_short_int(FACE_IDLParser.Signed_short_intContext ctx) {
         super.exitSigned_short_int(ctx);
+        dataTypeRegister = SimpleDataTypes.SignedShort;
     }
 
     /**
@@ -1119,6 +1149,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_long_int(FACE_IDLParser.Signed_long_intContext ctx) {
         super.exitSigned_long_int(ctx);
+        dataTypeRegister = SimpleDataTypes.SignedLong;
     }
 
     /**
@@ -1135,6 +1166,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_longlong_int(FACE_IDLParser.Signed_longlong_intContext ctx) {
         super.exitSigned_longlong_int(ctx);
+        dataTypeRegister = SimpleDataTypes.SignedLongLong;
     }
 
     /**
@@ -1167,6 +1199,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_tiny_int(FACE_IDLParser.Unsigned_tiny_intContext ctx) {
         super.exitUnsigned_tiny_int(ctx);
+        dataTypeRegister = SimpleDataTypes.UnsignedTiny;
     }
 
     /**
@@ -1183,6 +1216,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_short_int(FACE_IDLParser.Unsigned_short_intContext ctx) {
         super.exitUnsigned_short_int(ctx);
+        dataTypeRegister = SimpleDataTypes.UnsignedShort;
     }
 
     /**
@@ -1199,6 +1233,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_long_int(FACE_IDLParser.Unsigned_long_intContext ctx) {
         super.exitUnsigned_long_int(ctx);
+        dataTypeRegister = SimpleDataTypes.UnsignedLong;
     }
 
     /**
@@ -1215,6 +1250,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_longlong_int(FACE_IDLParser.Unsigned_longlong_intContext ctx) {
         super.exitUnsigned_longlong_int(ctx);
+        dataTypeRegister = SimpleDataTypes.UnsignedLongLong;
     }
 
     /**
@@ -1231,6 +1267,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitChar_type(FACE_IDLParser.Char_typeContext ctx) {
         super.exitChar_type(ctx);
+        dataTypeRegister = SimpleDataTypes.Char;
     }
 
     /**
@@ -1263,6 +1300,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitBoolean_type(FACE_IDLParser.Boolean_typeContext ctx) {
         super.exitBoolean_type(ctx);
+        dataTypeRegister = SimpleDataTypes.Boolean;
     }
 
     /**
@@ -1279,6 +1317,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitOctet_type(FACE_IDLParser.Octet_typeContext ctx) {
         super.exitOctet_type(ctx);
+        dataTypeRegister = SimpleDataTypes.Octet;
     }
 
     /**
@@ -2117,15 +2156,12 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         any_type
     }
 
-    private class Scope {
-        public final Set<String> Ids = new HashSet<>();
-    }
 
+    private SimpleDataTypes dataTypeRegister = SimpleDataTypes.None;
     private final CompilerContext compilerContext;
     private final ModuleObject globalModule;
     private final Stack<ModuleObject> moduleStack = new Stack<>();
     private final String fileBeingCompiled;
-    private final Stack<String> idStack = new Stack<>();
     private final Stack<String> declaratorStack = new Stack<>();
     private final Stack<IScopedObject> _scopeStack = new Stack<>();
 }
