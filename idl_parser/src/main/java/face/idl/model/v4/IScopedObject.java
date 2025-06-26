@@ -3,7 +3,12 @@ package face.idl.model.v4;
 public interface IScopedObject {
     enum Kind {
         Module,
-        Typedef
+        Typedef,
+        Struct,
+        Union,
+        Enum,
+        Interface,
+        templateModule
     }
 
 

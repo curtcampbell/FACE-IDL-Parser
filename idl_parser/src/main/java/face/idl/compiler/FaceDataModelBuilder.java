@@ -122,6 +122,27 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     public void enterStruct_type(FACE_IDLParser.Struct_typeContext ctx) {
         super.enterStruct_type(ctx);
 
+        var id = ctx.identifier().getText();
+        var scopedName = ctx.scoped_name();
+
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error here.");
+        }
+
+        var currentScope = _scopeStack.peek();
+
+        if (currentScope.containsId(id)){
+            //Error here.
+            throw new RuntimeException("ID already defined.  I know not enough information.");
+        }
+
+        var newStruct = new Struct(id);
+        currentScope.addScopedObject(newStruct);
+        _scopeStack.push(newStruct);
+
+
+
+
         var ctxIdentifier = ctx.identifier();
         var token = ctxIdentifier.start;
         var structId = ctxIdentifier.getText();
@@ -149,6 +170,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitStruct_type(FACE_IDLParser.Struct_typeContext ctx) {
         super.exitStruct_type(ctx);
+
+        _scopeStack.pop();
 
         currentStruct  = Optional.empty();
     }

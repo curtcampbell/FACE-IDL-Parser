@@ -1,0 +1,60 @@
+// This file contains various examples of 'struct' declarations
+// to test a parser against the FACE_IDL.g4 grammar.
+
+module StructExamples {
+
+    // Example 1: A basic struct with primitive members.
+    // This tests the fundamental structure with a simple member_list.
+    struct Point {
+        long x;
+        long y;
+        double z;
+    };
+
+    // Example 2: An empty struct.
+    // This tests the 'member_list' rule allowing zero members.
+    struct EmptyStruct {
+    };
+
+    // Example 3: A struct with multiple declarators on a single line.
+    // This tests the 'declarators' rule: type_spec declarator, declarator, ...;
+    struct Vector3D {
+        float x, y, z;
+        boolean is_normalized;
+    };
+
+    // Example 4: A struct that uses template types and arrays.
+    // This tests members using sequence_type, string_type, and array_dclarator.
+    struct SensorReading {
+        string<64>           sensor_id;
+        sequence<long, 1024> data_points; // Bounded sequence
+        octet                status_flags[8]; // Fixed-size array
+    };
+
+    // Example 5: A struct that inherits from another struct.
+    // This tests the optional inheritance clause: ': scoped_name'.
+    struct BaseData {
+        unsigned long long timestamp;
+    };
+
+    // TelemetryPacket inherits all members from BaseData.
+    struct TelemetryPacket : BaseData {
+        float temperature;
+        float pressure;
+    };
+
+    // Example 6: A struct that contains another user-defined struct as a member.
+    // This tests using a 'scoped_name' as a 'type_spec'.
+    struct Color {
+        uint8 red;
+        uint8 green;
+        uint8 blue;
+    };
+
+    struct Pixel {
+        long  x_coord;
+        long  y_coord;
+        Color pixel_color; // Member 'pixel_color' is of type 'Color'
+    };
+
+};
