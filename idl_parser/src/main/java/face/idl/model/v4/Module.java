@@ -1,8 +1,5 @@
 package face.idl.model.v4;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class Module extends ScopedObjectBase{
     private String identifier;
 
@@ -15,8 +12,8 @@ public class Module extends ScopedObjectBase{
      * @return Kind of scoped object
      */
     @Override
-    public Kind getKind() {
-        return Kind.Module;
+    public ScopedObjectKind getKind() {
+        return ScopedObjectKind.Module;
     }
 
 }

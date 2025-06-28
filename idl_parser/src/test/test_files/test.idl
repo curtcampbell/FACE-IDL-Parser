@@ -17,6 +17,7 @@ module FACE {
             enum SystemEventEnum {
                 VALUE
             };
+
         };
 
         enum SystemEventEnum {

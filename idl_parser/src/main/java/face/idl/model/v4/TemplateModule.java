@@ -6,7 +6,7 @@ public class TemplateModule extends ScopedObjectBase{
     }
 
     @Override
-    public Kind getKind() {
-        return Kind.templateModule;
+    public ScopedObjectKind getKind() {
+        return ScopedObjectKind.templateModule;
     }
 }

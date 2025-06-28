@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Stack;
+import java.util.Vector;
 
 public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
@@ -76,7 +77,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         var id = ctx.identifier().getText();
 
         if(_scopeStack.isEmpty()) {
-            throw new RuntimeException("Unexpected coding error here.");
+            throw new RuntimeException("Unexpected coding error enterModule.");
         }
 
         var currentScope = _scopeStack.peek();
@@ -103,7 +104,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         if(_scopeStack.isEmpty() ||
                 !(_scopeStack.peek() instanceof Module)) {
-            throw new RuntimeException("Unexpected coding error here.");
+            throw new RuntimeException("Unexpected coding error exitModule.");
         }
 
         // Pop this module as we exit this namespace.
@@ -122,9 +123,12 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         var id = ctx.identifier().getText();
         var scopedName = ctx.scoped_name();
+        if(scopedName != null) {
+            throw new RuntimeException("Scoped name not supported.  I know not enough information.");
+        }
 
         if(_scopeStack.isEmpty()) {
-            throw new RuntimeException("Unexpected coding error here.");
+            throw new RuntimeException("Unexpected coding error enterStruct_type.");
         }
 
         var currentScope = _scopeStack.peek();
@@ -134,12 +138,9 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("ID already defined.  I know not enough information.");
         }
 
-        var newStruct = new Struct(id);
+        var newStruct = new StructType(id);
         currentScope.addScopedObject(newStruct);
         _scopeStack.push(newStruct);
-
-
-
 
         var ctxIdentifier = ctx.identifier();
         var token = ctxIdentifier.start;
@@ -168,6 +169,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitStruct_type(FACE_IDLParser.Struct_typeContext ctx) {
         super.exitStruct_type(ctx);
+
+
 
         _scopeStack.pop();
 
@@ -203,6 +206,14 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     public void enterUnion_type(FACE_IDLParser.Union_typeContext ctx) {
         super.enterUnion_type(ctx);
 
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error enterUnion_type.");
+        }
+
+        var newUnion = new UnionType(ctx.identifier().getText());
+        _scopeStack.push(newUnion);
+
+
         var ctxIdentifier = ctx.identifier();
         var token = ctxIdentifier.start;
         var unionId = ctxIdentifier.getText();
@@ -232,7 +243,14 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     public void exitUnion_type(FACE_IDLParser.Union_typeContext ctx) {
         super.exitUnion_type(ctx);
 
-        currentUnion = Optional.empty();
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error enterUnion_type.");
+        }
+
+        if(_scopeStack.peek().getKind() != IScopedObject.ScopedObjectKind.Union){
+            throw new RuntimeException("Unexpected coding error exitUnion_type.");
+        }
+        _scopeStack.pop();
     }
 
     /**
@@ -264,40 +282,54 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         }
     }
 
+    /**
+     * @param ctx the parse tree
+     */
+    @Override
+    public void exitEnum_type(FACE_IDLParser.Enum_typeContext ctx) {
+        super.exitEnum_type(ctx);
+    }
+
+
 
     @Override
     public void enterType_dclarator(FACE_IDLParser.Type_dclaratorContext ctx) {
         super.enterType_dclarator(ctx);
 
-        var typeSpec = ctx.type_spec();
-        var declarators = ctx.declarators();
-
-
-        if(_scopeStack.isEmpty()) {
-            throw new RuntimeException("Unexpected coding error here.");
-        }
-
-        var currentScope = _scopeStack.peek();
-
-        if(currentScope.getKind() == IScopedObject.Kind.Module) {
-
-            declarators.declarator().forEach(declarator -> {
-                var newDeclarator = declarator.getText();
-                var typedef = new Typedef(newDeclarator);
-                if(currentScope.containsDeclarator(newDeclarator)) {
-                    throw new RuntimeException("Redefinition of typedef declarator.");
-                }
-                currentScope.addScopedObject(typedef);
-            });
-        } else {
-            throw new RuntimeException("Unexpected coding error here.");
-        }
+        //Let other methods know to store type information in designated register variables.
+        passTypeInfoFlag = true;
     }
 
     @Override
     public void exitType_dclarator(FACE_IDLParser.Type_dclaratorContext ctx) {
         super.exitType_dclarator(ctx);
 
+        //Typedef is a special case since it doesn't have a single identifier.
+
+        var declarators = ctx.declarators();
+
+
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error exitType_dclarator.");
+        }
+
+        var currentScope = _scopeStack.peek();
+
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Module) {
+            declaratorListRegister.forEach(
+                declarator -> {
+                    var typedef = new Typedef(declarator);
+                    if(currentScope.containsDeclarator(declarator)) {
+                        throw new RuntimeException("Redefinition of typedef declarator.");
+                    }
+                    typedef.setTypeSpec(typeSpecRegister);
+                    currentScope.addScopedObject(typedef);
+                });
+            declaratorListRegister.clear();
+            typeSpecRegister = null;
+        } else {
+            throw new RuntimeException("Unexpected coding error exitType_dclarator.");
+        }
     }
 
     /**
@@ -602,6 +634,10 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitScoped_name(FACE_IDLParser.Scoped_nameContext ctx) {
         super.exitScoped_name(ctx);
+
+        var scopedName = new ScopedNameType();
+        scopedName.setScopedName(ctx.getText());
+        typeSpecRegister = scopedName;
     }
 
     /**
@@ -611,19 +647,10 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     public void enterConst_dcl(FACE_IDLParser.Const_dclContext ctx) {
         super.enterConst_dcl(ctx);
 
-        //Process on exit since we will be using side effects of processing of child tokens.
-    }
-
-    /**
-     * @param ctx the parse tree
-     */
-    @Override
-    public void exitConst_dcl(FACE_IDLParser.Const_dclContext ctx) {
-        super.exitConst_dcl(ctx);
         var id = ctx.identifier().getText();
 
         if(_scopeStack.isEmpty()) {
-            throw new RuntimeException("Unexpected coding error here.");
+            throw new RuntimeException("Unexpected coding error enterConst_dcl.");
         }
 
         var currentScope = _scopeStack.peek();
@@ -633,18 +660,45 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("ID already defined.  I know not enough information.");
         }
 
-        if(currentScope.getKind() == IScopedObject.Kind.Module) {
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Module) {
             var newConstant = new Constant(id);
-            newConstant.setDataType(dataTypeRegister);
-            newConstant.setExpression(ctx.const_expr().getText());
-            currentScope.addScopedObject(newConstant);
 
-            //Set the register back to None so its clear for the next process.
-            dataTypeRegister = SimpleDataTypes.None;
+            _scopeStack.push(newConstant);
         } else {
-            throw new RuntimeException("Unexpected coding error here.");
+            throw new RuntimeException("Unexpected coding error enterConst_dcl.");
         }
 
+    }
+
+    /**
+     * @param ctx the parse tree
+     */
+    @Override
+    public void exitConst_dcl(FACE_IDLParser.Const_dclContext ctx) {
+        super.exitConst_dcl(ctx);
+
+        if(_scopeStack.isEmpty() ||
+           !(_scopeStack.peek() instanceof Constant currentScope)) {
+            throw new RuntimeException("Unexpected coding error exitConst_dcl.");
+        }
+
+        if(!(typeSpecRegister instanceof BaseTypeSpec ||
+             typeSpecRegister instanceof ScopedNameType) ||
+                typeSpecRegister == null) {
+            throw new RuntimeException("Unexpected coding error exitConst_dcl.");
+        }
+
+        Constant newConstant;
+        newConstant = currentScope;
+        newConstant.setDataType(typeSpecRegister);
+        newConstant.setExpression(ctx.const_expr().getText());
+        //currentScope.addScopedObject(newConstant);
+
+        //Set the register back to None so its clear for the next process.
+        typeSpecRegister = null;
+
+
+        _scopeStack.pop();
     }
 
     /**
@@ -677,6 +731,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitConst_expr(FACE_IDLParser.Const_exprContext ctx) {
         super.exitConst_expr(ctx);
+
+        var txt = ctx.getText();
     }
 
     /**
@@ -901,6 +957,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSimple_type_spec(FACE_IDLParser.Simple_type_specContext ctx) {
         super.exitSimple_type_spec(ctx);
+
     }
 
     /**
@@ -933,6 +990,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitBase_type_spec(FACE_IDLParser.Base_type_specContext ctx) {
         super.exitBase_type_spec(ctx);
+
     }
 
     /**
@@ -1031,7 +1089,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         super.exitSimple_dclarator(ctx);
 
         var id = ctx.start.getText();
-        declaratorStack.push(id);
+        declaratorListRegister.add(id);
+        declaratorStack.push(id);  //Todo: Look into removing this one.
     }
 
     /**
@@ -1064,7 +1123,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitFloating_pt_type(FACE_IDLParser.Floating_pt_typeContext ctx) {
         super.exitFloating_pt_type(ctx);
-        dataTypeRegister = SimpleDataTypes.Float;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.Float);
     }
 
     /**
@@ -1115,7 +1174,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     public void exitSigned_tiny_int(FACE_IDLParser.Signed_tiny_intContext ctx) {
         super.exitSigned_tiny_int(ctx);
 
-        dataTypeRegister = SimpleDataTypes.SignedTiny;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.SignedTiny);
     }
 
     /**
@@ -1132,7 +1191,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_short_int(FACE_IDLParser.Signed_short_intContext ctx) {
         super.exitSigned_short_int(ctx);
-        dataTypeRegister = SimpleDataTypes.SignedShort;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.SignedShort);
     }
 
     /**
@@ -1149,7 +1208,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_long_int(FACE_IDLParser.Signed_long_intContext ctx) {
         super.exitSigned_long_int(ctx);
-        dataTypeRegister = SimpleDataTypes.SignedLong;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.SignedLong);
     }
 
     /**
@@ -1166,7 +1225,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSigned_longlong_int(FACE_IDLParser.Signed_longlong_intContext ctx) {
         super.exitSigned_longlong_int(ctx);
-        dataTypeRegister = SimpleDataTypes.SignedLongLong;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.SignedLongLong);
     }
 
     /**
@@ -1199,7 +1258,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_tiny_int(FACE_IDLParser.Unsigned_tiny_intContext ctx) {
         super.exitUnsigned_tiny_int(ctx);
-        dataTypeRegister = SimpleDataTypes.UnsignedTiny;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.UnsignedTiny);
     }
 
     /**
@@ -1216,7 +1275,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_short_int(FACE_IDLParser.Unsigned_short_intContext ctx) {
         super.exitUnsigned_short_int(ctx);
-        dataTypeRegister = SimpleDataTypes.UnsignedShort;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.UnsignedShort);
     }
 
     /**
@@ -1233,7 +1292,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_long_int(FACE_IDLParser.Unsigned_long_intContext ctx) {
         super.exitUnsigned_long_int(ctx);
-        dataTypeRegister = SimpleDataTypes.UnsignedLong;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.UnsignedLong);
     }
 
     /**
@@ -1250,7 +1309,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitUnsigned_longlong_int(FACE_IDLParser.Unsigned_longlong_intContext ctx) {
         super.exitUnsigned_longlong_int(ctx);
-        dataTypeRegister = SimpleDataTypes.UnsignedLongLong;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.UnsignedLongLong);
     }
 
     /**
@@ -1267,7 +1326,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitChar_type(FACE_IDLParser.Char_typeContext ctx) {
         super.exitChar_type(ctx);
-        dataTypeRegister = SimpleDataTypes.Char;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.Char);
     }
 
     /**
@@ -1300,7 +1359,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitBoolean_type(FACE_IDLParser.Boolean_typeContext ctx) {
         super.exitBoolean_type(ctx);
-        dataTypeRegister = SimpleDataTypes.Boolean;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.Boolean);
     }
 
     /**
@@ -1317,7 +1376,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitOctet_type(FACE_IDLParser.Octet_typeContext ctx) {
         super.exitOctet_type(ctx);
-        dataTypeRegister = SimpleDataTypes.Octet;
+        typeSpecRegister = new BaseTypeSpec(BaseDataTypes.Octet);
     }
 
     /**
@@ -1462,6 +1521,15 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitMember(FACE_IDLParser.MemberContext ctx) {
         super.exitMember(ctx);
+
+        var currentScope = _scopeStack.peek();
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Struct){
+            StructType struct = (StructType) currentScope;
+            struct.addMember(typeSpecRegister, declaratorListRegister.toArray(new String[0]));
+            declaratorListRegister.clear();
+        } else {
+            throw new RuntimeException("Unexpected coding exit Member.");
+        }
     }
 
     /**
@@ -1478,6 +1546,16 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSwitch_type_spec(FACE_IDLParser.Switch_type_specContext ctx) {
         super.exitSwitch_type_spec(ctx);
+
+        var currentScope = _scopeStack.peek();
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Union){
+            var union = (UnionType)currentScope;
+            union.setSwitchType(typeSpecRegister);
+            typeSpecRegister = null;
+        } else {
+            throw new RuntimeException("Unexpected coding exit Switch_type_spec.");
+        }
+
     }
 
     /**
@@ -1510,6 +1588,24 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitCase_stmt(FACE_IDLParser.Case_stmtContext ctx) {
         super.exitCase_stmt(ctx);
+
+        var currentScope = _scopeStack.peek();
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Union) {
+            var union = (UnionType)currentScope;
+
+            var labels = ctx.case_label().stream().map(x -> {
+                if(x.KW_DEFAULT() != null){
+                    return x.KW_DEFAULT().getText();
+                }else {
+                    return x.const_expr().getText();
+                }
+            }).toArray(String[]::new);
+            union.addCaseStatement(labels,typeSpecRegister, declaratorListRegister.get(0));
+            typeSpecRegister = null;
+            declaratorListRegister.clear();
+        } else {
+            throw new RuntimeException("Unexpected coding error exitCase_stmt.");
+        }
     }
 
     /**
@@ -1542,14 +1638,14 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitElement_spec(FACE_IDLParser.Element_specContext ctx) {
         super.exitElement_spec(ctx);
-    }
 
-    /**
-     * @param ctx the parse tree
-     */
-    @Override
-    public void exitEnum_type(FACE_IDLParser.Enum_typeContext ctx) {
-        super.exitEnum_type(ctx);
+        var currentScope = _scopeStack.peek();
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Enum ||
+           currentScope.getKind() == IScopedObject.ScopedObjectKind.Union) {
+
+        } else {
+            throw new RuntimeException("Unexpected coding error exitElement_spec.");
+        }
     }
 
     /**
@@ -1582,6 +1678,16 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitSequence_type(FACE_IDLParser.Sequence_typeContext ctx) {
         super.exitSequence_type(ctx);
+
+        var newSequenceType = new SequenceType();
+
+        if(ctx.positive_int_const() != null) {
+            newSequenceType.setPositiveInt(ctx.positive_int_const().getText());
+        }
+        newSequenceType.setTypeSpec(typeSpecRegister);
+
+        //Set the register for any upstream types.
+        typeSpecRegister = newSequenceType;
     }
 
     /**
@@ -1630,6 +1736,13 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitString_type(FACE_IDLParser.String_typeContext ctx) {
         super.exitString_type(ctx);
+
+        var newStringType = new StringType();
+        if(ctx.positive_int_const() != null){
+            newStringType.setLength(ctx.positive_int_const().getText());
+        }
+
+        typeSpecRegister = newStringType;
     }
 
     /**
@@ -1654,6 +1767,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void enterArray_dclarator(FACE_IDLParser.Array_dclaratorContext ctx) {
         super.enterArray_dclarator(ctx);
+
+        throw new RuntimeException("Array type definitions not supported.");
     }
 
     /**
@@ -2157,7 +2272,11 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     }
 
 
-    private SimpleDataTypes dataTypeRegister = SimpleDataTypes.None;
+    private boolean passTypeInfoFlag = false;
+    //private BaseDataTypes dataTypeRegister = BaseDataTypes.None;
+    private ITypeSpec typeSpecRegister = null;
+    private final Vector<String> declaratorListRegister = new Vector<>();
+
     private final CompilerContext compilerContext;
     private final ModuleObject globalModule;
     private final Stack<ModuleObject> moduleStack = new Stack<>();

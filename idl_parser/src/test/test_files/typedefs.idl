@@ -3,6 +3,9 @@
 
 module TypedefExamples {
 
+    union MyUnion switch(long){
+
+    }
     // ========================================================================
     // 1. Typedefs for Base (Primitive) Types
     // These create aliases for the fundamental IDL data types.

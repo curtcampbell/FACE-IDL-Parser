@@ -6,8 +6,8 @@ public class Constant extends ScopedObjectBase{
     }
 
     @Override
-    public Kind getKind() {
-        return Kind.Constant;
+    public ScopedObjectKind getKind() {
+        return ScopedObjectKind.Constant;
     }
 
     public void setExpression(String expression) {
@@ -18,14 +18,15 @@ public class Constant extends ScopedObjectBase{
         return expression;
     }
 
-    public void setDataType(SimpleDataTypes dataType) {
+    public void setDataType(ITypeSpec dataType) {
+        //TODO: Limit this to only the types allows by constant declarations.
         this.dataType = dataType;
     }
 
-    public SimpleDataTypes getDataType() {
+    public ITypeSpec getDataType() {
         return dataType;
     }
 
     private String expression;
-    private SimpleDataTypes dataType;
+    private ITypeSpec dataType;
 }

@@ -1,6 +1,6 @@
 package face.idl.model.v4;
 
-public enum SimpleDataTypes {
+public enum BaseDataTypes {
     None,
     SignedShort,
     SignedLong,

@@ -1,8 +1,5 @@
 package face.idl.model.v4;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class Typedef extends ScopedObjectBase{
 
 
@@ -39,14 +36,34 @@ public class Typedef extends ScopedObjectBase{
      * @return
      */
     @Override
-    public Kind getKind() {
-        return Kind.Typedef;
+    public ScopedObjectKind getKind() {
+        return ScopedObjectKind.Typedef;
     }
 
-    public String getDeclarator() {
-        if(!getIdIsDeclarator()) {
-            throw new RuntimeException("Unexpected error. Typedefs should always have a declarator.");
-        }
-        return getIdentifier();
+//    public String getDeclarator() {
+//        if(!getIdIsDeclarator()) {
+//            throw new RuntimeException("Unexpected error. Typedefs should always have a declarator.");
+//        }
+//        return getIdentifier();
+//    }
+
+    public void setDeclarators(String[] declarators) {
+        this.declarators = declarators;
     }
+
+    public String[] getDeclarators() {
+        return declarators;
+    }
+
+    public ITypeSpec getTypeSpec() {
+        return typeSpec;
+    }
+
+    public void setTypeSpec(ITypeSpec typeSpec) {
+        this.typeSpec = typeSpec;
+    }
+
+
+    private String[] declarators;
+    private ITypeSpec typeSpec;
 }

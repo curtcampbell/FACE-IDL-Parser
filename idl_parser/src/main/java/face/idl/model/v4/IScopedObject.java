@@ -1,7 +1,7 @@
 package face.idl.model.v4;
 
 public interface IScopedObject {
-    enum Kind {
+    enum ScopedObjectKind {
         Constant,
         Module,
         Typedef,
@@ -18,7 +18,7 @@ public interface IScopedObject {
     /**
      * @return Kind of scoped object
      */
-    Kind getKind();
+    ScopedObjectKind getKind();
 
     /**
      * @return true if the ID is a declarator, false otherwise
