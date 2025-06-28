@@ -338,6 +338,15 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void enterTemplate_module_dcl(FACE_IDLParser.Template_module_dclContext ctx) {
         super.enterTemplate_module_dcl(ctx);
+
+        if(_scopeStack.isEmpty() ||
+                !(_scopeStack.peek() instanceof Module currentScope)) {
+            throw new RuntimeException("Unexpected coding error enterTemplate_module_dcl.");
+        }
+
+        var newTemplateModule = new TemplateModule(ctx.identifier().getText());
+        currentScope.addScopedObject(newTemplateModule);
+        _scopeStack.push(newTemplateModule);
     }
 
     /**
@@ -346,6 +355,13 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitTemplate_module_dcl(FACE_IDLParser.Template_module_dclContext ctx) {
         super.exitTemplate_module_dcl(ctx);
+
+        if(_scopeStack.isEmpty() ||
+        !(_scopeStack.peek() instanceof TemplateModule templateModule)) {
+            throw new RuntimeException("Unexpected coding error exitTemplate_module_dcl.");
+        }
+
+        _scopeStack.pop();
     }
 
     /**
@@ -378,6 +394,42 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitFormal_parameter(FACE_IDLParser.Formal_parameterContext ctx) {
         super.exitFormal_parameter(ctx);
+
+
+        if(_scopeStack.isEmpty() ||
+                !(_scopeStack.peek() instanceof TemplateModule templateModule)){
+            throw new RuntimeException("Unexpected coding error exitFormal_parameters.");
+        }
+
+        var formalParameterType = ctx.formal_parameter_type();
+        TemplateModule.FormalPrameterTypes templateType = TemplateModule.FormalPrameterTypes.None;
+
+        if(formalParameterType.KW_TYPENAME() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.TypeName;
+        } else if(formalParameterType.KW_CONST() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Const;
+        } else if(formalParameterType.KW_INTERFACE() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Interface;
+        } else if(formalParameterType.KW_VALUETYPE() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.ValueType;
+        } else if(formalParameterType.KW_STRUCT() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Struct;
+        } else if(formalParameterType.KW_UNION() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Union;
+        } else if(formalParameterType.KW_EXCEPTION() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Exception;
+        } else if(formalParameterType.KW_ENUM() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.Enum;
+        } else if(formalParameterType.KW_SEQUENCE() != null) {
+            templateType =  TemplateModule.FormalPrameterTypes.Sequence;
+        }else if(formalParameterType.const_type() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.ConstType;
+        }else if(formalParameterType.sequence_type() != null) {
+            templateType = TemplateModule.FormalPrameterTypes.SequenceType;
+        }
+
+        var id = ctx.identifier().getText();
+        templateModule.addFormalParameter(templateType, id);
     }
 
     /**
