@@ -16,6 +16,7 @@ module DataWrapper<typename T> {
     };
 };
 
+module DataWrapper<int> MyDataWrapper;
 
 // ========================================================================
 // Example 2: Template Module with Multiple, Varied Formal Parameters
@@ -56,50 +57,50 @@ module PubSub<
 };
 
 
-//// ========================================================================
-//// Example 3: Template Module with a Template Module Reference (Alias)
-////
-//// Tests:
-//// - The `template_module_ref` rule.
-//// - Creating an alias for a formal parameter within the template.
-//// - This is a more advanced feature for creating nested or recursive-like
-////   template structures.
-//// ========================================================================
-//module Node<typename T> {
-//    // Forward declare the struct that will be used in the alias
-//    struct NodeData;
+// ========================================================================
+// Example 3: Template Module with a Template Module Reference (Alias)
 //
-//    // Create an alias for a potential 'NextNode' template instantiation
-//    // using this template's own formal parameter 'T'.
-//    alias Node<T> NextNode;
+// Tests:
+// - The `template_module_ref` rule.
+// - Creating an alias for a formal parameter within the template.
+// - This is a more advanced feature for creating nested or recursive-like
+//   template structures.
+// ========================================================================
+module Node<typename T> {
+    // Forward declare the struct that will be used in the alias
+    struct NodeData;
+
+    // Create an alias for a potential 'NextNode' template instantiation
+    // using this template's own formal parameter 'T'.
+    alias Node<T> NextNode;
+
+    // Define the struct using the alias
+    struct NodeData {
+        T data;
+        NextNode next; // Using the aliased template reference
+    };
+};
+
+
+// ========================================================================
+// Example 4: Template Module with Other Formal Parameter Types
 //
-//    // Define the struct using the alias
-//    struct NodeData {
-//        T data;
-//        NextNode next; // Using the aliased template reference
-//    };
-//};
-//
-//
-//// ========================================================================
-//// Example 4: Template Module with Other Formal Parameter Types
-////
-//// Tests:
-//// - Other valid `formal_parameter_type`s like `struct`, `union`,
-////   `enum`, and `exception`.
-//// ========================================================================
-//module GenericLogger<
-//    struct LogRecord,
-//    union LogVariant,
-//    enum LogLevel,
-//    exception LogError
-//>
-//{
-//    const LogLevel DEFAULT_LEVEL = LogLevel::INFO;
-//
-//    interface Logger {
-//        void log(in LogRecord record) raises (LogError);
-//        void log_variant(in LogVariant data) raises (LogError);
-//        void set_level(in LogLevel level);
-//    };
-//};
+// Tests:
+// - Other valid `formal_parameter_type`s like `struct`, `union`,
+//   `enum`, and `exception`.
+// ========================================================================
+module GenericLogger<
+    struct LogRecord,
+    union LogVariant,
+    enum LogLevel,
+    exception LogError
+>
+{
+    const LogLevel DEFAULT_LEVEL = LogLevel::INFO;
+
+    interface Logger {
+        void log(in LogRecord record) raises (LogError);
+        void log_variant(in LogVariant data) raises (LogError);
+        void set_level(in LogLevel level);
+    };
+};

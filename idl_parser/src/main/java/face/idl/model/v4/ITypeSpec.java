@@ -1,4 +1,4 @@
 package face.idl.model.v4;
 
-public interface ITypeSpec {
+public interface ITypeSpec extends IActualParameter{
 }

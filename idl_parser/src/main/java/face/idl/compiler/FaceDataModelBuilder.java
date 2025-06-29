@@ -470,6 +470,18 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void enterTemplate_module_inst(FACE_IDLParser.Template_module_instContext ctx) {
         super.enterTemplate_module_inst(ctx);
+
+        if(_scopeStack.isEmpty()) {
+            throw new RuntimeException("Unexpected coding error enterTemplate_module_inst.");
+        }
+
+        var currentScope = _scopeStack.peek();
+        var newScope = new TemplateModuleInstance(ctx.identifier().getText());
+
+        newScope.setScopedName(ctx.scoped_name().getText());
+
+        currentScope.addScopedObject(newScope);
+        _scopeStack.push(newScope);
     }
 
     /**
@@ -478,6 +490,13 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitTemplate_module_inst(FACE_IDLParser.Template_module_instContext ctx) {
         super.exitTemplate_module_inst(ctx);
+
+        if(_scopeStack.isEmpty() ||
+                !(_scopeStack.peek() instanceof TemplateModuleInstance templateModuleInstance)) {
+            throw new RuntimeException("Unexpected coding error exitTemplate_module_inst.");
+        }
+
+        _scopeStack.pop();
     }
 
     /**
@@ -510,6 +529,14 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitActual_parameter(FACE_IDLParser.Actual_parameterContext ctx) {
         super.exitActual_parameter(ctx);
+
+        if(_scopeStack.isEmpty() ||
+                !(_scopeStack.peek() instanceof TemplateModuleInstance templateModuleInstance)) {
+            throw new RuntimeException("Unexpected coding error exitActual_parameter.");
+        }
+
+        templateModuleInstance.addActualParameter(typeSpecRegister);
+        typeSpecRegister = null;
     }
 
     /**
@@ -712,7 +739,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("ID already defined.  I know not enough information.");
         }
 
-        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Module) {
+        if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Module ||
+           currentScope.getKind() == IScopedObject.ScopedObjectKind.TemplateModule) {
             var newConstant = new Constant(id);
 
             _scopeStack.push(newConstant);

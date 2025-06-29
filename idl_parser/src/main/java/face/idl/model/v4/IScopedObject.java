@@ -9,7 +9,8 @@ public interface IScopedObject {
         Union,
         Enum,
         Interface,
-        templateModule
+        TemplateModule,
+        TemplateModuleInstance
     }
 
 

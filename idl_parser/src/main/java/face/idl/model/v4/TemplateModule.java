@@ -52,7 +52,7 @@ public class TemplateModule extends Module{
 
     @Override
     public ScopedObjectKind getKind() {
-        return ScopedObjectKind.templateModule;
+        return ScopedObjectKind.TemplateModule;
     }
 
     public void addFormalParameter(FormalPrameterTypes type, String identifier){

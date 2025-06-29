@@ -1,6 +1,6 @@
 package face.idl.model.v4;
 
-public class Constant extends ScopedObjectBase{
+public class Constant extends ScopedObjectBase implements  IActualParameter{
     public Constant(String identifier) {
         super(identifier);
     }
