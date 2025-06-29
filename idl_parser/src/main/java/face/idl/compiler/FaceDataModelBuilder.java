@@ -222,16 +222,14 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
          currentUnion = currentModule.newUnionObject(unionId, fileBeingCompiled, token.getLine(), token.getCharPositionInLine());
         if(currentUnion.isEmpty()) {
             var metadata = currentModule.getIdMetadata(unionId).get();
-            throw new RuntimeException(("Error: %s line: %d, col %d.%nIn union declaration, " +
-                    "identifier %s is already defined.%n" +
-                    "Previous declaration is here: %s line: %d, %d")
-                    .formatted(fileBeingCompiled,
-                            ctx.start.getLine(),
-                            ctx.start.getCharPositionInLine(),
-                            unionId,
-                            metadata.getFilePath(),
-                            metadata.getLineNumber(),
-                            metadata.getColumn()));
+
+            var errorMsg = ("In union declaration, identifier %s is already defined." +
+                    "%nPrevious declaration is here: %s line: %d, %d")
+                            .formatted(unionId,
+                                    metadata.getFilePath(),
+                                    metadata.getLineNumber(),
+                                    metadata.getColumn());
+            raiseError(ctx, errorMsg);
         }
     }
 
@@ -269,16 +267,15 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         if(newEnum.isEmpty()) {
             var metadata = currentModule.getIdMetadata(enumId).get();
-            throw new RuntimeException(("Error: %s line: %d, col %d.%nIn enum declaration, " +
-                    "identifier %s is already defined.%n" +
-                    "Previous declaration is here: %s line: %d, %d")
-                    .formatted(fileBeingCompiled,
-                            ctx.start.getLine(),
-                            ctx.start.getCharPositionInLine(),
-                            enumId,
-                            metadata.getFilePath(),
-                            metadata.getLineNumber(),
-                            metadata.getColumn()));
+
+            var errorMsg = ("In enum declaration, identifier %s is already defined. " +
+                    "%nPrevious declaration is here: %s line: %d, %d")
+                            .formatted(enumId,
+                                    metadata.getFilePath(),
+                                    metadata.getLineNumber(),
+                                    metadata.getColumn());
+
+            raiseError(ctx, errorMsg);
         }
     }
 
@@ -601,6 +598,22 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitForward_dcl(FACE_IDLParser.Forward_dclContext ctx) {
         super.exitForward_dcl(ctx);
+
+        String keyword = null;
+        if(ctx.KW_ABSTRACT() != null) {
+            keyword = "abstract";
+        }
+
+        if(ctx.KW_LOCAL() != null) {
+            keyword = "local";
+        }
+
+        if(keyword != null) {
+            var errorMessage = "\"%s\" is not currently supported in FACE interface declarations. Ignoring keyword"
+                    .formatted(keyword);
+
+            printWarning(ctx, errorMessage);
+        }
     }
 
     /**
@@ -617,6 +630,21 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitInterface_header(FACE_IDLParser.Interface_headerContext ctx) {
         super.exitInterface_header(ctx);
+
+        String keyword = null;
+        if(ctx.KW_ABSTRACT() != null) {
+            keyword = "abstract";
+        }
+
+        if(ctx.KW_LOCAL() != null) {
+            keyword = "local";
+        }
+
+        if(keyword != null) {
+            var errorMessage = ("\"%s\" is not currently supported in FACE interface declarations. Ignoring keyword.")
+                    .formatted(keyword);
+            printWarning(ctx, errorMessage);
+        }
     }
 
     /**
@@ -1839,6 +1867,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitWide_string_type(FACE_IDLParser.Wide_string_typeContext ctx) {
         super.exitWide_string_type(ctx);
+
+        printWarning(ctx, "Wide string types are not supported.");
     }
 
     /**
@@ -1937,6 +1967,10 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitOp_attribute(FACE_IDLParser.Op_attributeContext ctx) {
         super.exitOp_attribute(ctx);
+
+        if(ctx.KW_ONEWAY() != null) {
+            printWarning(ctx, "Attribute \"oneway\" is not supported in operations for FACE IDSs.");
+        }
     }
 
     /**
@@ -2017,6 +2051,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitRaises_expr(FACE_IDLParser.Raises_exprContext ctx) {
         super.exitRaises_expr(ctx);
+
+        printWarning(ctx, "Raises expressions are not supported. Ignoring attribute.");
     }
 
     /**
@@ -2331,6 +2367,25 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         return moduleStack.peek();
     }
 
+    void printWarning(ParserRuleContext ctx,String message) {
+        var errorMessage = ("\u001B[33mWarning: %s line: %d, col %d. %n%s\u001B[0m")
+                .formatted(fileBeingCompiled,
+                        ctx.start.getLine(),
+                        ctx.start.getCharPositionInLine(),
+                        message);
+        System.err.println(errorMessage);
+    }
+
+    void raiseError(ParserRuleContext ctx, String errorMessage) {
+        var msg = ("Error: %s line: %d, col %d.%n%s")
+                .formatted(fileBeingCompiled,
+                        ctx.start.getLine(),
+                        ctx.start.getCharPositionInLine(),
+                        errorMessage);
+        throw new RuntimeException(msg);
+    }
+
+
     enum IDL_Types {
         signed_short_int,
         signed_long_int,
@@ -2350,7 +2405,6 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         scoped_name,
         any_type
     }
-
 
     private boolean passTypeInfoFlag = false;
     //private BaseDataTypes dataTypeRegister = BaseDataTypes.None;

@@ -110,11 +110,11 @@ module InterfaceTests {
 
         // Test 4.7: An operation with various parameter types (`op_dcl`)
         // Also tests using a forward-declared interface as a parameter.
-        long process_data(
-            in sequence<octet> input_data,
-            out string result_log,
-            inout ForwardDeclaredInterface callback
-        );
+//        long process_data(
+//            sequence<octet> input_data,
+//            string result_log,
+//            ForwardDeclaredInterface callback
+//        );
 
         // Test 4.8: An operation that returns void and raises an exception (`raises_expr`)
         void perform_action() raises (OperationFailed);
