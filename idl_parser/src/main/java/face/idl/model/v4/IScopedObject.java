@@ -10,7 +10,8 @@ public interface IScopedObject {
         Enum,
         Interface,
         TemplateModule,
-        TemplateModuleInstance
+        TemplateModuleInstance,
+        Exception /*Currently not supported but needed for error handling*/
     }
 
 

@@ -7,6 +7,12 @@
 
 module InterfaceTests {
 
+    interface MyInterface: someScope::TInterface, OtherInterface {
+        const short Var = 0;
+        typedef long ALong;
+        int getSomething();
+    };
+
     // ========================================================================
     // Part 1: Forward Declarations (`forward_dcl`)
     //
@@ -110,11 +116,11 @@ module InterfaceTests {
 
         // Test 4.7: An operation with various parameter types (`op_dcl`)
         // Also tests using a forward-declared interface as a parameter.
-//        long process_data(
+        long process_data(
 //            sequence<octet> input_data,
-//            string result_log,
-//            ForwardDeclaredInterface callback
-//        );
+            in string result_log,
+            inout ForwardDeclaredInterface callback
+        );
 
         // Test 4.8: An operation that returns void and raises an exception (`raises_expr`)
         void perform_action() raises (OperationFailed);
