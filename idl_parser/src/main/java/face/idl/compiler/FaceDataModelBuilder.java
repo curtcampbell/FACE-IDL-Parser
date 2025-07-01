@@ -82,16 +82,20 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         var currentScope = _scopeStack.peek();
 
-        if (currentScope.containsId(id)){
-            //Error here.
-            throw new RuntimeException("ID already defined.  I know not enough information.");
+        Module newModule = null;
+        if(!currentScope.containsId(id)){
+            newModule = new Module(id);
+        }else if(currentScope.getObjectById(id) instanceof Module module) {
+            newModule = module;
         }
 
-
-        var newModule = new Module(id);
-        currentScope.addScopedObject(newModule);
-        _scopeStack.push(newModule);
-
+        if(newModule != null) {
+            currentScope.addToScope(newModule);
+            _scopeStack.push(newModule);
+        } else {
+            raiseError(ctx, "Can not define new module. %s is already defined."
+                    .formatted(id));
+        }
     }
 
     /**
@@ -124,7 +128,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         var id = ctx.identifier().getText();
         var scopedName = ctx.scoped_name();
         if(scopedName != null) {
-            throw new RuntimeException("Scoped name not supported.  I know not enough information.");
+            raiseError(scopedName, "Scoped name not supported.");
         }
 
         if(_scopeStack.isEmpty()) {
@@ -133,32 +137,40 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         var currentScope = _scopeStack.peek();
 
+        StructType currentStruct = null;
         if (currentScope.containsId(id)){
-            //Error here.
-            throw new RuntimeException("ID already defined.  I know not enough information.");
+            var prevObj = currentScope.getObjectById(id);
+            if(prevObj instanceof StructType &&
+               prevObj.isForwardDeclaration()) {
+               currentStruct = (StructType)  prevObj;
+            } else {
+                raiseError(ctx.identifier(), "Can not define new struct with id %s. Id already defined."
+                        .formatted(id));
+            }
+        } else {
+            currentStruct = new StructType(id);
+            currentScope.addToScope(currentStruct);
         }
 
-        var newStruct = new StructType(id);
-        currentScope.addScopedObject(newStruct);
-        _scopeStack.push(newStruct);
+        _scopeStack.push(currentStruct);
 
-        var ctxIdentifier = ctx.identifier();
-        var token = ctxIdentifier.start;
-        var structId = ctxIdentifier.getText();
-        var currentModule = getCurrentModule();
-        currentStruct = currentModule.newStruct(structId, fileBeingCompiled, token.getLine(), token.getCharPositionInLine());
-        if(currentStruct.isEmpty()) {
-            var metadata = currentModule.getIdMetadata(structId).get();
-
-            var errorMsg =("In struct declaration, identifier %s is already defined.%n" +
-                    "Previous declaration is here: %s line: %d, %d")
-                    .formatted(structId,
-                            metadata.getFilePath(),
-                            metadata.getLineNumber(),
-                            metadata.getColumn());
-
-            raiseError(ctx, errorMsg);
-        }
+//        var ctxIdentifier = ctx.identifier();
+//        var token = ctxIdentifier.start;
+//        var structId = ctxIdentifier.getText();
+//        var currentModule = getCurrentModule();
+//        currentStruct = currentModule.newStruct(structId, fileBeingCompiled, token.getLine(), token.getCharPositionInLine());
+//        if(currentStruct.isEmpty()) {
+//            var metadata = currentModule.getIdMetadata(structId).get();
+//
+//            var errorMsg =("In struct declaration, identifier %s is already defined.%n" +
+//                    "Previous declaration is here: %s line: %d, %d")
+//                    .formatted(structId,
+//                            metadata.getFilePath(),
+//                            metadata.getLineNumber(),
+//                            metadata.getColumn());
+//
+//            raiseError(ctx, errorMsg);
+//        }
     }
 
     /**
@@ -185,10 +197,26 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("Unexpected coding error enterInterface_dcl.");
         }
 
+        var id = ctx.interface_header().identifier().getText();
         var currentScope = _scopeStack.peek();
-        var newInterface = new InterfaceType(ctx.interface_header().identifier().getText());
-        currentScope.addScopedObject(newInterface);
-        _scopeStack.push(newInterface);
+
+        InterfaceType interfaceType= null;
+
+        if(currentScope.containsId(id)) {
+            if(currentScope.getObjectById(id) instanceof InterfaceType pInterfaceType &&
+                    pInterfaceType.isForwardDeclaration()) {
+                interfaceType = pInterfaceType;
+            } else {
+                raiseError(ctx.interface_header().identifier(),
+                        "Can not define interface with id %s. Id already defined."
+                                .formatted(id));
+            }
+        } else {
+            interfaceType = new InterfaceType(ctx.interface_header().identifier().getText());
+            currentScope.addToScope(interfaceType);
+        }
+
+        _scopeStack.push(interfaceType);
      }
 
     /**
@@ -327,7 +355,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
                         throw new RuntimeException("Redefinition of typedef declarator.");
                     }
                     typedef.setTypeSpec(typeSpecRegister);
-                    currentScope.addScopedObject(typedef);
+                    currentScope.addToScope(typedef);
                 });
             declaratorListRegister.clear();
             typeSpecRegister = null;
@@ -351,7 +379,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         }
 
         var newTemplateModule = new TemplateModule(ctx.identifier().getText());
-        currentScope.addScopedObject(newTemplateModule);
+        currentScope.addToScope(newTemplateModule);
         _scopeStack.push(newTemplateModule);
     }
 
@@ -486,7 +514,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
         newScope.setScopedName(ctx.scoped_name().getText());
 
-        currentScope.addScopedObject(newScope);
+        currentScope.addToScope(newScope);
         _scopeStack.push(newScope);
     }
 
@@ -623,6 +651,19 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
 
             printWarning(ctx, errorMessage);
         }
+
+        if(_scopeStack.isEmpty()){
+            throw new RuntimeException("Unexpected coding error exitForward_dcl.");
+        }
+        var currentScope = _scopeStack.peek();
+
+        var id = ctx.identifier().getText();
+        if(currentScope.containsId(id)){
+            raiseError(ctx.identifier(), "Can not declare interface with id %s. Id previously defined."
+                    .formatted(id));
+        }
+
+        currentScope.addToScope(new InterfaceType(id, true));
     }
 
     /**
@@ -696,7 +737,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             printWarning(ctx.attr_dcl(), "Attribute declarations are not currently supported in FACE interface definitions. Ignoring keyword.");
         }
         if(ctx.type_dcl() != null) {
-            printWarning(ctx.type_dcl(), "Type declarations are not currently supported within FACE interface definitions. Ignoring keyword.");
+            printWarning(ctx.type_dcl(), "Type declarations are not currently supported within FACE interface definitions. Ignoring.");
         }
         if(ctx.const_dcl() != null) {
             printWarning(ctx.const_dcl(), "Constant declarations are not currently supported within FACE interface definitions. Ignoring declaration.");
@@ -798,15 +839,15 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         var currentScope = _scopeStack.peek();
 
         if (currentScope.containsId(id)){
-            //Error here.
-            throw new RuntimeException("ID already defined.  I know not enough information.");
+            raiseError(ctx.identifier(), "Id %s for constant already defined."
+                    .formatted(id));
         }
 
         if(currentScope.getKind() == IScopedObject.ScopedObjectKind.Module ||
            currentScope.getKind() == IScopedObject.ScopedObjectKind.TemplateModule ||
            currentScope.getKind() == IScopedObject.ScopedObjectKind.Interface) {
             var newConstant = new Constant(id);
-
+            currentScope.addToScope(newConstant);
             _scopeStack.push(newConstant);
         } else {
             throw new RuntimeException("Unexpected coding error enterConst_dcl.");
@@ -836,7 +877,6 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
         newConstant = currentScope;
         newConstant.setDataType(typeSpecRegister);
         newConstant.setExpression(ctx.const_expr().getText());
-        //currentScope.addScopedObject(newConstant);
 
         //Set the register back to None so its clear for the next process.
         typeSpecRegister = null;
@@ -1566,6 +1606,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitBitset_type(FACE_IDLParser.Bitset_typeContext ctx) {
         super.exitBitset_type(ctx);
+
+        printWarning(ctx, "The bitset declaration is not currently supported.  Ignoring.");
     }
 
     /**
@@ -1614,6 +1656,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitBitmask_type(FACE_IDLParser.Bitmask_typeContext ctx) {
         super.exitBitmask_type(ctx);
+
+        printWarning(ctx, "The bitmask declaration is not currently supported. Ignoring.");
     }
 
     /**
@@ -1967,6 +2011,8 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("Unexpected coding error exitExcept_dcl.");
         }
 
+        //We add this even though it is not currently supported because it helps with the
+        //error logic.
          _scopeStack.push(new ExceptionType(""));
 
     }
@@ -1982,7 +2028,6 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("Unexpected coding error exitExcept_dcl.");
         }
         _scopeStack.pop();
-        printWarning(ctx, "Exceptions are not supported. Ignoring this declaration.");
     }
 
     /**
@@ -2197,6 +2242,19 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     @Override
     public void exitConstr_forward_dcl(FACE_IDLParser.Constr_forward_dclContext ctx) {
         super.exitConstr_forward_dcl(ctx);
+
+        if(_scopeStack.isEmpty() ||
+                !(_scopeStack.peek() instanceof Module module)) {
+            throw new RuntimeException("Unexpected coding error exitConstr_forward_dcl.");
+        }
+
+        var id = ctx.ID().getText();
+
+        if(ctx.KW_STRUCT() != null) {
+            module.addToScope(new StructType(id, true));
+        }else if(ctx.KW_UNION() != null) {
+            module.addToScope(new UnionType(id, true));
+        }
     }
 
     /**
@@ -2427,7 +2485,7 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
     }
 
     void raiseError(ParserRuleContext ctx, String errorMessage) {
-        var msg = ("Error: %s line: %d, col %d.%n%s")
+        var msg = ("Error: %s line: %d, col %d. %s")
                 .formatted(fileBeingCompiled,
                         ctx.start.getLine(),
                         ctx.start.getCharPositionInLine(),

@@ -28,6 +28,11 @@ public class StructType extends ScopedObjectBase implements ITypeSpec{
         super(identifier);
     }
 
+    public StructType(String identifier, boolean isForwardDeclaration) {
+        super(identifier);
+        this.isForwardDeclaration = isForwardDeclaration;
+    }
+
     public boolean hasMember(String declarator) {
         throw new NotImplementedException();
     }
@@ -38,14 +43,13 @@ public class StructType extends ScopedObjectBase implements ITypeSpec{
      * @param declarators
      */
     public void addMember(ITypeSpec type, String[] declarators) {
+        isForwardDeclaration = false;
         members.add(new Member(type, declarators));
     }
 
     public Vector<Member> getMembers() {
         return members;
     }
-
-    private Vector<Member> members = new Vector<>();
 
     /**
      * @return
@@ -54,4 +58,16 @@ public class StructType extends ScopedObjectBase implements ITypeSpec{
     public ScopedObjectKind getKind() {
         return ScopedObjectKind.Struct;
     }
+
+    /**
+     * @return
+     */
+    @Override
+    public boolean isForwardDeclaration() {
+        return isForwardDeclaration;
+    }
+
+    private final Vector<Member> members = new Vector<>();
+    private boolean isForwardDeclaration = false;
+
 }

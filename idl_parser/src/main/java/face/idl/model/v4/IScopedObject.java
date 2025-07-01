@@ -36,6 +36,12 @@ public interface IScopedObject {
     boolean containsId(String id);
 
     /**
+     * @param id
+     * @return
+     * **/
+    IScopedObject getObjectById(String id);
+
+    /**
      * Checks if the specified declarator is contained within the scoped object.
      *
      * @param declarator the declarator to check for existence
@@ -43,5 +49,12 @@ public interface IScopedObject {
      */
     boolean containsDeclarator(String declarator);
 
-    void addScopedObject(IScopedObject newObject);
+
+    /**
+     *
+     * @return true if this object is a forward declaration, false otherwise
+     */
+    boolean isForwardDeclaration();
+
+    void addToScope(IScopedObject newObject);
 }

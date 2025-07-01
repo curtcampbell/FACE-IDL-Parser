@@ -6,7 +6,10 @@ public class InterfaceType extends ScopedObjectBase {
     public InterfaceType(String identifier) {
         super(identifier);
     }
-
+    public InterfaceType(String identifier, boolean isForwardDeclaration) {
+        super(identifier);
+        this.isForwardDeclaration = isForwardDeclaration;
+    }
 
     /**
      * @return
@@ -24,5 +27,10 @@ public class InterfaceType extends ScopedObjectBase {
         return interfaceList;
     }
 
+    public boolean isForwardDeclaration() {
+        return isForwardDeclaration;
+    }
+
     private final Vector<String> interfaceList = new Vector<>();
+    private boolean isForwardDeclaration = false;
 }

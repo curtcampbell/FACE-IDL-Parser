@@ -8,7 +8,7 @@ public abstract class ScopedObjectBase implements IScopedObject{
     private final boolean idIsDeclaritor;
     private final Set<String> ids = new HashSet<>();
     private final Set<String> declarators = new HashSet<>();
-    private final Set<IScopedObject> scopedObjects = new HashSet<>();
+    private final HashSet<IScopedObject> scopedObjects = new HashSet<>();
     
     
     public ScopedObjectBase(String identifier) {
@@ -73,6 +73,18 @@ public abstract class ScopedObjectBase implements IScopedObject{
     }
 
     /**
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public IScopedObject getObjectById(String id) {
+        return scopedObjects.stream()
+                .filter(so -> so.getIdentifier().equals(id))
+                .findFirst().orElse(null);
+    }
+
+    /**
      * @param declarator the declarator to check for existence 
      * @return
      */
@@ -80,12 +92,17 @@ public abstract class ScopedObjectBase implements IScopedObject{
     public boolean containsDeclarator(String declarator) {
         return declarators.contains(declarator);
     }
-    
+
+    @Override
+    public boolean isForwardDeclaration() {
+        return false;
+    }
+
     /**
      * @param newObject
      */
     @Override
-    public void addScopedObject(IScopedObject newObject) {
+    public void addToScope(IScopedObject newObject) {
         if(scopedObjects.contains(newObject)) {
             throw new RuntimeException("Object already exists in scope.");
         }

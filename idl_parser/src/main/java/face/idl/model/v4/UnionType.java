@@ -7,6 +7,11 @@ public class UnionType extends ScopedObjectBase implements ITypeSpec {
         super(identifier);
     }
 
+    public UnionType(String identifier, boolean isForwardDeclaration) {
+        super(identifier);
+        this.isForwardDeclaration = isForwardDeclaration;
+    }
+
         public static class CaseStatement {
 
             private String declarator;
@@ -37,6 +42,16 @@ public class UnionType extends ScopedObjectBase implements ITypeSpec {
         return caseStatements;
     }
 
+    /**
+     * @return
+     */
+    @Override
+    public boolean isForwardDeclaration() {
+        return isForwardDeclaration;
+    }
+
     private ITypeSpec switchType;
     private final Vector<CaseStatement> caseStatements = new Vector<>();
+    private boolean isForwardDeclaration = false;
+
 }

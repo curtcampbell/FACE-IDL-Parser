@@ -1,0 +1,82 @@
+// This file contains a representative set of 'bitmask' and 'bitset'
+// declarations to test a parser against the FACE_IDL.g4 grammar.
+
+module BitwiseExamples {
+
+    // ========================================================================
+    // Part 1: Bitmask Type (`bitmask_type`)
+    //
+    // A bitmask defines a set of named bit flags.
+    // ========================================================================
+
+    // Test 1.1: A basic bitmask with multiple enumerators.
+    // This tests the core `bitmask` syntax with a `bit_values` list.
+    bitmask FilePermissions {
+        Read,
+        Write,
+        Execute
+    };
+
+    // Test 1.2: A bitmask with a single enumerator.
+    // This tests the edge case of a single value in `bit_values`.
+    bitmask ControlFlag {
+        Enabled
+    };
+
+
+    // ========================================================================
+    // Part 2: Bitset Type (`bitset_type`)
+    //
+    // A bitset defines a struct-like type with explicit bit-level packing.
+    // ========================================================================
+
+    // Test 2.1: A basic bitset with various bitfield specifications.
+    // Tests:
+    // - `bitfield<size>` syntax.
+    // - `bitfield<size, type>` syntax.
+    // - Different integer types for the bitfield.
+    bitset StatusRegister {
+        bitfield<1>                 is_active;
+        bitfield<3, unsigned short> operating_mode;
+        bitfield<1>                 has_error;
+        bitfield<11>                reserved_bits; // Padding to 16 bits
+    };
+
+    // Test 2.2: A bitset with multiple declarators on a single line.
+    // This tests the `simple_dclarators` rule within a `bitfield`.
+    bitset SimpleFlags {
+        bitfield<1> flag_a, flag_b, flag_c, flag_d;
+        bitfield<4> status_code;
+    };
+
+    // Test 2.3: A bitset that inherits from another bitset.
+    // This tests the optional inheritance clause: `: scoped_name`.
+    bitset ExtendedStatusRegister : StatusRegister {
+        bitfield<1> is_locked;
+        bitfield<1> is_dirty;
+        // This bitset will have a total size of 16 (from base) + 2 = 18 bits.
+    };
+
+    // Test 2.4: A bitset using all allowed `bitfield_type_spec` types.
+    // This tests `boolean`, `octet`, and various `integer_type`s.
+    bitset MixedTypeBitset {
+        bitfield<1, boolean>        power_on;
+        bitfield<8, octet>          device_id;
+        bitfield<4, unsigned long>  version;
+        bitfield<3, int16>          error_level;
+    };
+
+    // Test 2.5: A bitset inheriting from a fully scoped name.
+    // This ensures the parser correctly handles `::` in the inheritance spec.
+    module Base {
+        bitset BaseFlags {
+            bitfield<1> base_flag_one;
+            bitfield<1> base_flag_two;
+        };
+    };
+
+    bitset DerivedFromScoped : ::BitwiseExamples::Base::BaseFlags {
+        bitfield<1> derived_flag;
+    };
+
+};

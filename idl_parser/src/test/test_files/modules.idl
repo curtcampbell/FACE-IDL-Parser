@@ -1,0 +1,20 @@
+module FACE {
+    module DM {
+
+        interface MyInterface;
+        interface MyInterface;
+
+        const long Mylong = 100;
+        const long Mylong = 100;
+
+        struct DM;
+
+        struct DM {
+            long a;
+        };
+
+        struct MyStruct {
+            short b;
+        };
+    };
+};

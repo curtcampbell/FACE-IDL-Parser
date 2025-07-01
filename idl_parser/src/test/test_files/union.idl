@@ -4,116 +4,116 @@
 module UnionExamples {
 
 
-//    // ========================================================================
-//    // Example 1: Basic Union with an Integer Discriminator
-//    //
-//    // Tests:
-//    // - A common integer type (`long`) as the discriminator.
-//    // - Simple primitive types for members.
-//    // - A `default` case.
-//    // ========================================================================
-//    union DataValue switch (long) {
-//        case 1:
-//            long long_val;
-//        case 2:
-//            float float_val;
-//        case 3:
-//            string string_val;
-//        default:
-//            octet error_code;
-//    };
-//
-//
-//    // ========================================================================
-//    // Example 2: Union with an Enum Discriminator
-//    //
-//    // Tests:
-//    // - Using a user-defined `enum` as the `switch_type_spec`.
-//    // - Using enumerators as `case` labels.
-//    // - No `default` case, which is a valid construct.
-//    // ========================================================================
-//    enum ShapeType {
-//        SQUARE,
-//        CIRCLE,
-//        POLYGON
-//    };
-//
-//    struct Circle {
-//        double radius;
-//    };
-//
-//    struct Polygon {
-//        sequence<long> points;
-//    };
-//
-//    union Shape switch (ShapeType) {
-//        case SQUARE:
-//            long side_length;
-//        case CIRCLE:
-//            Circle circle_data; // Member is a user-defined struct
-//        case POLYGON:
-//            Polygon polygon_data;
-//    };
-//
-//
-//    // ========================================================================
-//    // Example 3: Union with a Boolean Discriminator
-//    //
-//    // Tests:
-//    // - Using `boolean` as the `switch_type_spec`.
-//    // - Using the `TRUE` and `FALSE` literals in `case` labels.
-//    // ========================================================================
-//    union Status switch (boolean) {
-//        case TRUE:
-//            unsigned long success_code;
-//        case FALSE:
-//            string<128> error_message;
-//    };
-//
-//
-//    // ========================================================================
-//    // Example 4: Union with Multiple Case Labels for a Single Member
-//    //
-//    // Tests:
-//    // - The `case_label+` grammar rule, allowing multiple cases
-//    //   to fall through to the same member.
-//    // - Using `char` as the discriminator.
-//    // ========================================================================
-//    union Command switch (char) {
-//        case 'a':
-//        case 'A':
-//            long add_payload;
-//        case 'd':
-//        case 'D':
-//            long delete_id;
-//        case 'u':
-//        case 'U':
-//            string update_payload;
-//        default:
-//            boolean is_noop;
-//    };
-//
-//
-//    // ========================================================================
-//    // Example 5: Union with a Scoped Name as Discriminator
-//    //
-//    // Tests:
-//    // - Using a `scoped_name` (from a typedef) as the `switch_type_spec`.
-//    // - Using a constant defined elsewhere in a `case` label.
-//    // ========================================================================
-//    typedef short ErrorCode;
-//    const ErrorCode E_FATAL = -1;
-//    const ErrorCode E_WARN = -2;
-//
-//    union SystemEvent switch (ErrorCode) {
-//        case E_FATAL:
-//            string fatal_reason;
-//        case E_WARN:
-//            string warning_message;
-//        case 0:
-//            long success_info;
-//    };
-//
+    // ========================================================================
+    // Example 1: Basic Union with an Integer Discriminator
+    //
+    // Tests:
+    // - A common integer type (`long`) as the discriminator.
+    // - Simple primitive types for members.
+    // - A `default` case.
+    // ========================================================================
+    union DataValue switch (long) {
+        case 1:
+            long long_val;
+        case 2:
+            float float_val;
+        case 3:
+            string string_val;
+        default:
+            octet error_code;
+    };
+
+
+    // ========================================================================
+    // Example 2: Union with an Enum Discriminator
+    //
+    // Tests:
+    // - Using a user-defined `enum` as the `switch_type_spec`.
+    // - Using enumerators as `case` labels.
+    // - No `default` case, which is a valid construct.
+    // ========================================================================
+    enum ShapeType {
+        SQUARE,
+        CIRCLE,
+        POLYGON
+    };
+
+    struct Circle {
+        double radius;
+    };
+
+    struct Polygon {
+        sequence<long> points;
+    };
+
+    union Shape switch (ShapeType) {
+        case SQUARE:
+            long side_length;
+        case CIRCLE:
+            Circle circle_data; // Member is a user-defined struct
+        case POLYGON:
+            Polygon polygon_data;
+    };
+
+
+    // ========================================================================
+    // Example 3: Union with a Boolean Discriminator
+    //
+    // Tests:
+    // - Using `boolean` as the `switch_type_spec`.
+    // - Using the `TRUE` and `FALSE` literals in `case` labels.
+    // ========================================================================
+    union Status switch (boolean) {
+        case TRUE:
+            unsigned long success_code;
+        case FALSE:
+            string<128> error_message;
+    };
+
+
+    // ========================================================================
+    // Example 4: Union with Multiple Case Labels for a Single Member
+    //
+    // Tests:
+    // - The `case_label+` grammar rule, allowing multiple cases
+    //   to fall through to the same member.
+    // - Using `char` as the discriminator.
+    // ========================================================================
+    union Command switch (char) {
+        case 'a':
+        case 'A':
+            long add_payload;
+        case 'd':
+        case 'D':
+            long delete_id;
+        case 'u':
+        case 'U':
+            string update_payload;
+        default:
+            boolean is_noop;
+    };
+
+
+    // ========================================================================
+    // Example 5: Union with a Scoped Name as Discriminator
+    //
+    // Tests:
+    // - Using a `scoped_name` (from a typedef) as the `switch_type_spec`.
+    // - Using a constant defined elsewhere in a `case` label.
+    // ========================================================================
+    typedef short ErrorCode;
+    const ErrorCode E_FATAL = -1;
+    const ErrorCode E_WARN = -2;
+
+    union SystemEvent switch (ErrorCode) {
+        case E_FATAL:
+            string fatal_reason;
+        case E_WARN:
+            string warning_message;
+        case 0:
+            long success_info;
+    };
+
 
     // ========================================================================
     // Example 6: Union with Complex Member Types
