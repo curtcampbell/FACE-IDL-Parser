@@ -378,6 +378,13 @@ public class FaceDataModelBuilder extends FACE_IDLBaseListener {
             throw new RuntimeException("Unexpected coding error enterTemplate_module_dcl.");
         }
 
+        var id = ctx.identifier().getText();
+        if(currentScope.containsId(id)) {
+            raiseError(ctx.identifier(),
+                    "Can not define template module with id %s. Id already defined."
+                            .formatted(id));
+        }
+
         var newTemplateModule = new TemplateModule(ctx.identifier().getText());
         currentScope.addToScope(newTemplateModule);
         _scopeStack.push(newTemplateModule);

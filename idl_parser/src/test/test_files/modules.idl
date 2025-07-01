@@ -1,11 +1,17 @@
 module FACE {
     module DM {
 
-        interface MyInterface;
-        interface MyInterface;
+
+        module MyModule<typename MyName>  {
+
+
+            interface MyInterface {
+
+            };
+        };
 
         const long Mylong = 100;
-        const long Mylong = 100;
+
 
         struct DM;
 
