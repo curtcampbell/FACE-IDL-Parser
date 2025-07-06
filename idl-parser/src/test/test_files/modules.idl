@@ -1,0 +1,26 @@
+module FACE {
+    module DM {
+
+
+        module MyModule<typename MyName>  {
+
+
+            interface MyInterface {
+                int MyMethod(in int value, inout int inOutVal, out int outVal)
+            };
+        };
+
+        const long Mylong = 100;
+
+
+        struct DM;
+
+        struct DM {
+            long a;
+        };
+
+        struct MyStruct {
+            short b;
+        };
+    };
+};
