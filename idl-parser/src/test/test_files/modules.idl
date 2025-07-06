@@ -6,7 +6,7 @@ module FACE {
 
 
             interface MyInterface {
-                int MyMethod(in int value, inout int inOutVal, out int outVal)
+                int MyMethod(in int value, inout int inOutVal, out int outVal);
             };
         };
 

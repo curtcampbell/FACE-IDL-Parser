@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
+    <groupId>mil.army.uvc.tools.idl-parser</groupId>
     <artifactId>idl-parser</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -40,16 +40,17 @@
             <artifactId>picocli-codegen</artifactId>
             <version>4.7.6</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity-engine-core -->
+
         <dependency>
-            <groupId>org.apache.velocity</groupId>
-            <artifactId>velocity-engine-core</artifactId>
-            <version>2.3</version>
+            <groupId>mil.army.uvc.tools.core</groupId>
+            <artifactId>tool-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.example.core</groupId>
-            <artifactId>tool-core</artifactId>
+            <groupId>mil.army.uvc.tools.idl-parser.model</groupId>
+            <artifactId>idl-model</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>
