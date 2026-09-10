@@ -1,0 +1,23 @@
+//! Source file: FACE/IOSS/MultiChannelAnalog_Injectable.idl
+
+#ifndef FACE_IOSS_MULTICHANNELANALOG_INJECTABLE
+#define FACE_IOSS_MULTICHANNELANALOG_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/MultiChannelAnalog.idl>
+
+module FACE {
+  module IOSS {
+    module MultiChannelAnalog {
+
+      //! Template module instantiation for MultiChannelAnalog I/O Service 
+      //! Interface
+      module Injectable<
+        FACE::IOSS::MultiChannelAnalog::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module MultiChannelAnalog
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_MULTICHANNELANALOG_INJECTABLE

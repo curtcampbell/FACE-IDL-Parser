@@ -1,0 +1,67 @@
+## @foreach entity
+## @filename ${model.idlModule.replace(".", "/")}/${structName}.idl
+##
+## Generates one IDL struct file per Template / CompositeTemplate type.
+## FACE Technical Standard 3.2 §J.8 — data-model IDL binding.
+##
+## Context variables (supplied by IdlGeneratorPipeline.entityContext()):
+##   $model             EntityModel
+##   $entity            EntityDescriptor
+##   $structName        IDL struct name (= entity.simpleName for TSS types)
+##   $idlGuard          include-guard symbol
+##   $idlSourcePath     source path for the file header comment
+##   $moduleOpeners     List<String> — DM module open lines (FACE { DM { Model { )
+##   $moduleClosers     List<String> — DM module close lines
+##   $contentIndent     String of spaces matching module nesting depth
+##
+// Source: $idlSourcePath
+#ifndef ${idlGuard}
+\#define ${idlGuard}
+
+## Include any cross-template dependencies resolved during IDL-4.
+#foreach ($inc in $entity.includes)
+\#include "$inc"
+#end
+
+#foreach ($opener in $moduleOpeners)
+$opener
+#end
+
+## IDL-1: uop:Template types receive a T_<Name> wrapper module + typedef.
+##         uop:CompositeTemplate types emit the bare struct/union directly.
+#if (!$entity.compositeTemplate)
+${contentIndent}module T_${structName} {
+#set ($innerIndent = "${contentIndent}  ")
+#else
+#set ($innerIndent = $contentIndent)
+#end
+
+#if ($entity.union)
+${innerIndent}union ${structName} switch (unsigned short) {
+#foreach ($field in $entity.fields)
+${innerIndent}  case $field.positionIndex: $field.idlType $field.name$field.arrayDimension;
+#end
+${innerIndent}};
+#else
+${innerIndent}struct ${structName} {
+#foreach ($field in $entity.fields)
+## IDL-7: optional fields are wrapped as sequence<T, 1>.
+#if ($field.optional)
+${innerIndent}  sequence<$field.idlType, 1> $field.name$field.arrayDimension;
+#else
+${innerIndent}  $field.idlType $field.name$field.arrayDimension;
+#end
+#end
+${innerIndent}};
+#end
+
+#if (!$entity.compositeTemplate)
+${contentIndent}}; // module T_${structName}
+${contentIndent}typedef T_${structName}::${structName} ${structName};
+#end
+
+#foreach ($closer in $moduleClosers)
+$closer
+#end
+
+#endif // ${idlGuard}

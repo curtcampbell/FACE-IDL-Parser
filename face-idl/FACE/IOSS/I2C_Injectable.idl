@@ -1,0 +1,22 @@
+//! Source file: FACE/IOSS/I2C_Injectable.idl
+
+#ifndef FACE_IOSS_I2C_INJECTABLE
+#define FACE_IOSS_I2C_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/I2C.idl>
+
+module FACE {
+  module IOSS {
+    module I2C {
+
+      //! Template module instantiation for I2C I/O Service Interface
+      module Injectable<
+        FACE::IOSS::I2C::Combined_RW_IO_Service
+      > Combined_RW_IO_Service_Injectable;
+
+    }; // module I2C
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_I2C_INJECTABLE

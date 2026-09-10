@@ -1,0 +1,119 @@
+## file.hpp.vm
+## Generates a single C++ header for one IDL source file.
+##
+## All constructs (structs, enums, interfaces, template instantiations) declared
+## in the IDL file are emitted into this one header, preserving the module nesting
+## as C++ namespace blocks.
+##
+## Context:
+##   $guard    — C preprocessor header guard token, e.g. "TYPEDTS_ENTITYEVENT_HPP"
+##   $includes — List<String>: additional #include paths beyond FACE/Common.hpp
+##               (e.g. "FACE/TSS/Common.hpp", "FACE/DM/SampleModel.hpp")
+##   $items    — List<Object>: flat render list built by GenericLanguageMapper.
+##               Each element is one of:
+##                 NsOpen         → open a namespace block
+##                 NsClose        → close a namespace block
+##                 StructItem     → emit a struct declaration
+##                 EnumItem       → emit an enum declaration
+##                 InterfaceItem  → emit a pure-virtual abstract class declaration
+##   $types    — TypeResolver
+##
+#set($H = "#")
+${H}pragma once
+${H}ifndef ${guard}
+${H}define ${guard}
+
+\#include <FACE/Common.hpp>
+#foreach($inc in $includes)
+\#include <${inc}>
+#end
+
+#foreach($item in $items)
+#set($t = $item.class.simpleName)
+## ── Namespace open ──────────────────────────────────────────────────────────
+#if($t == "NsOpen")
+namespace ${item.name} {
+## ── Namespace close ─────────────────────────────────────────────────────────
+#elseif($t == "NsClose")
+} // namespace ${item.name}
+## ── Struct ──────────────────────────────────────────────────────────────────
+#elseif($t == "StructItem")
+#set($s = $item.node)
+#if($s.baseType.isPresent())
+struct ${s.name} : public ${s.baseType.get()} {
+#else
+struct ${s.name} {
+#end
+#foreach($field in $s.members)
+    $types.typeDecl($field.type, $field.name);
+#end
+
+    /// Default constructor — zero-initialises all scalar members.
+    ${s.name}()
+#foreach($field in $s.members)
+#if($foreach.first)
+        : ${field.name}($types.defaultInit($field.type))
+#else
+        , ${field.name}($types.defaultInit($field.type))
+#end
+#end
+    {}
+};
+
+## ── Enum ────────────────────────────────────────────────────────────────────
+#elseif($t == "EnumItem")
+#set($e = $item.node)
+struct ${e.name} {
+    enum Value {
+#foreach($val in $e.values)
+#if($foreach.last)
+        ${val.name}
+#else
+        ${val.name},
+#end
+#end
+    };
+private:
+    ${e.name}();
+};
+
+## ── Interface (pure-virtual abstract class) ──────────────────────────────────
+#elseif($t == "InterfaceItem")
+#set($iface = $item.node)
+class ${iface.name} {
+public:
+    virtual ~${iface.name}() {}
+#foreach($op in $iface.operations)
+#if($op.oneway)
+    /// @note IDL oneway — fire-and-forget; no return value.
+#end
+#set($rt = $types.type($op.returnType))
+#set($hasRetval = false)
+#if(!$op.oneway && $rt != "void")
+#set($hasRetval = true)
+#end
+
+    virtual void ${op.name}(
+#foreach($param in $op.parameters)
+#if($foreach.last && !$hasRetval)
+        $types.paramDeclFull($param, $item.localInterfaces, $item.interfaceKindActuals)) = 0;
+#else
+        $types.paramDeclFull($param, $item.localInterfaces, $item.interfaceKindActuals),
+#end
+#end
+#if($hasRetval)
+        ${rt}& retval) = 0;
+#elseif($op.parameters.isEmpty())
+        ) = 0;
+#end
+#end
+protected:
+    ${iface.name}() {}
+private:
+    ${iface.name}(const ${iface.name}&);
+    ${iface.name}& operator=(const ${iface.name}&);
+};
+
+#end
+#end
+${H}endif // ${guard}

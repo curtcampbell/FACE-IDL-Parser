@@ -1,0 +1,13 @@
+package us.opengroup.FACE;
+
+/**
+ * Exception signalling that a data-conversion error occurred.
+ *
+ * <p>FACE Technical Standard 3.2 §K.4.3
+ */
+public class DATA_CONVERSION extends Exception {
+
+    public DATA_CONVERSION() { super(""); }
+
+    public DATA_CONVERSION(String reason) { super(reason); }
+}

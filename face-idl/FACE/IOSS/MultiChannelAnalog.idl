@@ -1,0 +1,64 @@
+//! Source file: FACE/IOSS/MultiChannelAnalog.idl
+
+#ifndef FACE_IOSS_MULTICHANNELANALOG
+#define FACE_IOSS_MULTICHANNELANALOG
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the MultiChannelAnalog I/O Service.
+    module MultiChannelAnalog {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      
+      //! Number of channels per connection
+      const unsigned short MAX_CHANNELS_PER_CONNECTION = 32;
+      typedef long ANALOG_VALUE_TYPE;
+      typedef sequence<ANALOG_VALUE_TYPE,MAX_CHANNELS_PER_CONNECTION>
+        MULTICHANNEL_BUFFER_TYPE;
+      struct ReadWriteBuffer {
+        MULTICHANNEL_BUFFER_TYPE analog_channels;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! Minimum value
+      const IO_PARAMETER_ID_TYPE MIN_VALUE = 0; // FACE_LONG
+      //! Maximum value
+      const IO_PARAMETER_ID_TYPE MAX_VALUE = 1; // FACE_LONG
+      //! Initial value
+      const IO_PARAMETER_ID_TYPE INIT_VALUE = 2; // FACE_LONG
+      //! Data buffer precision - value type: long double
+      const IO_PARAMETER_ID_TYPE PRECISION = 3; // FACE_DOUBLE
+      //! Direction - FALSE = in; TRUE = out
+      const IO_PARAMETER_ID_TYPE DIRECTION = 4; // FACE_BOOLEAN
+      //! Voltage gain
+      const IO_PARAMETER_ID_TYPE GAIN = 5; // FACE_LONGDOUBLE
+      //! Voltage offset
+      const IO_PARAMETER_ID_TYPE OFFSET = 6; // FACE_LONGDOUBLE
+      //! Number of analog inputs (<= MAX_CHANNELS_PER_CONNECTION)
+      const IO_PARAMETER_ID_TYPE NUM_INPUTS = 7; // FACE_UNSIGNEDSHORT
+      //! Number of analog outputs (<= MAX_CHANNELS_PER_CONNECTION)
+      const IO_PARAMETER_ID_TYPE NUM_OUTPUTS = 8; // FACE_UNSIGNEDSHORT
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      //!
+      //! Note there are no defined bus status types for the
+      //! MultiChannelAnalog I/O Service.
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<MultiChannelAnalog::ReadWriteBuffer>
+      MultiChannelAnalog;
+  };
+};
+
+#endif //! FACE_IOSS_MULTICHANNELANALOG

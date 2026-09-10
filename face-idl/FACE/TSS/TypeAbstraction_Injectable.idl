@@ -1,0 +1,22 @@
+//! Source file: FACE/TSS/TypeAbstraction_Injectable.idl
+
+#ifndef FACE_TSS_TYPEABSTRACTION_INJECTABLE
+#define FACE_TSS_TYPEABSTRACTION_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/TypeAbstraction.idl>
+
+module FACE {
+  module TSS {
+    module TypeAbstraction {
+
+      //! Template module instantiation for Type Abstraction Interface
+      module Injectable<
+        FACE::TSS::TypeAbstraction::TypeAbstractionTS
+      > TypeAbstractionTS_Injectable;
+
+    }; // module TypeAbstraction
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_TYPEABSTRACTION_INJECTABLE

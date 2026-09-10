@@ -1,0 +1,19 @@
+namespace FACE
+{
+    /// <summary>
+    /// Exception indicating an invalid parameter was supplied to a FACE operation.
+    /// <para>
+    /// C# adaptation of FACE Technical Standard 3.2 §K.4.2 (<c>BAD_PARAM</c>).
+    /// Unlike the Java mapping this exception is unchecked; callers may choose
+    /// to catch it at UoP boundaries.
+    /// </para>
+    /// </summary>
+    public class BadParamException : System.Exception
+    {
+        /// <inheritdoc/>
+        public BadParamException() : base(string.Empty) { }
+
+        /// <inheritdoc/>
+        public BadParamException(string reason) : base(reason) { }
+    }
+}

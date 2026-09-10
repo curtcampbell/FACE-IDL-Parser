@@ -1,0 +1,19 @@
+namespace FACE
+{
+    /// <summary>
+    /// Exception indicating a data-conversion error within a FACE operation.
+    /// <para>
+    /// C# adaptation of FACE Technical Standard 3.2 §K.4.3 (<c>DATA_CONVERSION</c>).
+    /// Unlike the Java mapping this exception is unchecked; callers may choose
+    /// to catch it at UoP boundaries.
+    /// </para>
+    /// </summary>
+    public class DataConversionException : System.Exception
+    {
+        /// <inheritdoc/>
+        public DataConversionException() : base(string.Empty) { }
+
+        /// <inheritdoc/>
+        public DataConversionException(string reason) : base(reason) { }
+    }
+}

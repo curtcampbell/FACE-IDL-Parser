@@ -1,0 +1,22 @@
+//! Source file: FACE/LCM/Connectable_Injectable.idl
+
+#ifndef FACE_LCM_CONNECTABLE_INJECTABLE
+#define FACE_LCM_CONNECTABLE_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/LCM/Connectable.idl>
+
+module FACE {
+  module LCM {
+    module Connectable {
+
+      //! Template module instantiation for Connectable Interface
+      module Injectable<
+        FACE::LCM::Connectable::ConnectableInstance
+      > ConnectableInstance_Injectable;
+
+    }; // module Connectable
+  }; // module LCM
+}; // module FACE
+
+#endif //! FACE_LCM/CONNECTABLE_INJECTABLE

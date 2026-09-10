@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.warhex</groupId>
+    <artifactId>face-idl-tools</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>FACE IDL Tools</name>
+    <description>
+        FACE toolchain utilities: IDL generator, IDL binder, and code generator.
+        face-idl-gen reads entity models (YAML / .face XMI) and emits IDL artifacts.
+        face-idl-binder reads IDL and emits FACE language bindings (C++, Java, Python, C#).
+        face-codegen reads IDL + optional .face model and renders user-supplied Velocity
+        templates to produce concrete implementation code (TSS transport services, UoP skeletons, etc.).
+    </description>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Dependency versions -->
+        <velocity.version>2.3</velocity.version>
+        <snakeyaml.version>2.2</snakeyaml.version>
+        <slf4j.version>2.0.13</slf4j.version>
+        <junit.version>5.10.2</junit.version>
+        <antlr4.version>4.13.1</antlr4.version>
+        <picocli.version>4.7.6</picocli.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- ================================================================
+             Apache Velocity Engine — template processing
+             ================================================================ -->
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+            <version>${velocity.version}</version>
+        </dependency>
+
+        <!-- ================================================================
+             SnakeYAML — YAML entity source file parsing
+             ================================================================ -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+        </dependency>
+
+        <!-- ================================================================
+             SLF4J — logging facade used by Velocity internals.
+             Simple implementation for CLI use; swap for logback in production.
+             ================================================================ -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- ================================================================
+             ANTLR4 Runtime — IDL parser (lexer/parser generated from FACE_IDL.g4)
+             ================================================================ -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>${antlr4.version}</version>
+        </dependency>
+
+        <!-- ================================================================
+             PicoCLI — command-line argument parsing
+             ================================================================ -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>${picocli.version}</version>
+        </dependency>
+
+        <!-- ================================================================
+             Test dependencies
+             ================================================================ -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <!-- templates/languages/ is the resource root so classpath loaders resolve
+             cpp/struct.hpp.vm, python/struct.py.vm, etc. directly by language subpath.
+             src/main/resources/ is kept as the second root for any other classpath files. -->
+        <resources>
+            <resource>
+                <directory>templates/languages</directory>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <!-- ANTLR4 — generate Lexer/Parser/Visitor from FACE_IDL.g4
+                 Grammar source: src/main/antlr4/**/*.g4
+                 Generated output: target/generated-sources/antlr4/ (auto-added to compile path) -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>${antlr4.version}</version>
+                <executions>
+                    <execution>
+                        <goals><goal>antlr4</goal></goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Generate visitor API (used by IdlAstBuilder); skip listener API -->
+                    <visitor>true</visitor>
+                    <listener>false</listener>
+                </configuration>
+            </plugin>
+
+            <!-- Compiler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Surefire — run JUnit 5 tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+
+            <!-- Shade — produce two runnable fat JARs: mvn package
+                 face-idl-gen.jar    → FaceIdlGen    (model → IDL)
+                 face-idl-binder.jar → FaceIdlBinder (IDL → language bindings)
+                 IDL templates are external and excluded from both JARs. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+
+                    <!-- face-idl-gen -->
+                    <execution>
+                        <id>face-idl-gen</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/face-idl-gen-${project.version}.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>com.warhex:face-idl-tools</artifact>
+                                    <excludes>
+                                        <exclude>templates/entity-reactor-idl/**</exclude>
+                                        <exclude>templates/data-model-idl/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.warhex.er.generator.FaceIdlGen</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+
+                    <!-- face-codegen -->
+                    <execution>
+                        <id>face-codegen</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/face-codegen-${project.version}.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>com.warhex:face-idl-tools</artifact>
+                                    <excludes>
+                                        <exclude>templates/entity-reactor-idl/**</exclude>
+                                        <exclude>templates/data-model-idl/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.warhex.er.generator.FaceCodeGen</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+
+                    <!-- face-idl-binder -->
+                    <execution>
+                        <id>face-idl-binder</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/face-idl-binder-${project.version}.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>com.warhex:face-idl-tools</artifact>
+                                    <excludes>
+                                        <exclude>templates/entity-reactor-idl/**</exclude>
+                                        <exclude>templates/data-model-idl/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.warhex.er.generator.FaceIdlBinder</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
+            <!-- Assembly — produce a distribution ZIP:
+                   face-idl-tools-<version>-dist.zip
+                     lib/face-idl-gen-<version>.jar
+                     lib/face-idl-binder-<version>.jar
+                     templates/entity-reactor-idl/**   (Entity Reactor IDL templates)
+                     templates/data-model-idl/**        (TSS data-model IDL templates)
+                     bin/face-idl-gen.bat
+                     bin/face-idl-binder.bat
+                 Run with: mvn package assembly:single -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/dist.xml</descriptor>
+                    </descriptors>
+                    <finalName>face-idl-tools-${project.version}</finalName>
+                    <appendAssemblyId>true</appendAssemblyId>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

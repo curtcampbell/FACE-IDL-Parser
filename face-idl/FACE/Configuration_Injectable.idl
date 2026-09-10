@@ -1,0 +1,18 @@
+//! Source file: FACE/Configuration_Injectable.idl
+
+#ifndef FACE_CONFIGURATION_INJECTABLE
+#define FACE_CONFIGURATION_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/Configuration.idl>
+
+module FACE {
+
+  //! Template module instantiation for Configuration Interface
+  module Injectable<
+    FACE::Configuration
+  > Configuration_Injectable;
+
+}; // module FACE
+
+#endif //! FACE_CONFIGURATION_INJECTABLE

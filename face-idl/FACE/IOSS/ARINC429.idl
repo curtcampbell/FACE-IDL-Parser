@@ -1,0 +1,59 @@
+//! Source file: FACE/IOSS/ARINC429.idl
+
+#ifndef FACE_IOSS_ARINC429
+#define FACE_IOSS_ARINC429
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the ARCINC-429 I/O Service.
+    module ARINC429 {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      const unsigned short MAX_NUM_LABELS = 65535;
+      typedef sequence<unsigned long, MAX_NUM_LABELS> LABEL_SEQUENCE;
+      struct ReadWriteBuffer {
+        LABEL_SEQUENCE label_payload;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      typedef unsigned short PARITY_TYPE;
+      const PARITY_TYPE PARITY_NONE = 0;
+      const PARITY_TYPE PARITY_ODD = 1;
+      const PARITY_TYPE PARITY_EVEN = 2;
+      const PARITY_TYPE PARITY_MARK = 3;
+      const PARITY_TYPE PARITY_SPACE = 4;
+
+      //! Channel direction - FALSE = TX; TRUE = RX
+      const IO_PARAMETER_ID_TYPE DIRECTION = 0; // FACE_BOOLEAN
+      //! Channel parity (PARITY_TYPE)
+      const IO_PARAMETER_ID_TYPE PARITY = 1; // FACE_USHORT
+      //! Channel speed - FALSE = High; TRUE = Low
+      const IO_PARAMETER_ID_TYPE CHANNEL_SPEED = 2; // FACE_BOOLEAN
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      const BUS_STATUS_TYPE HW_OPERATIONAL = 0;
+      const BUS_STATUS_TYPE HW_FIFO_OVERFLOW = 1;
+      const BUS_STATUS_TYPE SW_CIRCULAR_BUFF_OVERFLOW = 2;
+      const BUS_STATUS_TYPE HW_ADDRESS_ERROR = 3;
+      const BUS_STATUS_TYPE HW_SEQUENCE_ERROR = 4;
+      const BUS_STATUS_TYPE HW_PARITY_ERROR = 5;
+      const BUS_STATUS_TYPE CLOCK_LOSS = 6;
+      const BUS_STATUS_TYPE UNKNOWN_ERROR = 7;
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<ARINC429::ReadWriteBuffer> ARINC429;
+  };
+};
+
+#endif //! FACE_IOSS_ARINC429

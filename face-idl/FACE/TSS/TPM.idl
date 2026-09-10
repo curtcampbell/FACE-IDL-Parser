@@ -1,0 +1,197 @@
+//! Source file: FACE/TSS/TPM.idl
+
+#ifndef FACE_TSS_TPM
+#define FACE_TSS_TPM
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    module TPM {
+      typedef UID_TYPE CHANNEL_ID_TYPE;
+
+      enum EVENT_TYPE {
+       INIT_COMPLETE,  //initialization has completed
+       XPORT_DEGRADED, //a failure, such as being oversubscribed, is
+                       //degrading transport performance
+       CBIT_FAIL,      //continuous built-in-test failure
+       IBIT_FAIL,      //initiated built-in-test failure
+       CHANNEL_FAIL,   //a particular failure has occurred in a channel
+       LOST_LINK,      //the transport link cannot detect wire activity
+       TRANSMIT_COMPLETE //the last transmission has completed
+      };
+
+      //! Two kinds of callbacks are provided to receive data or events. 
+      //! Callbacks registered to receive events get called when changes
+      //! in the channel(e.g. a disruption in the channel), transports 
+      //! (e.g. lost link, a degradation in network performance, a cbit
+      //! failure), as well as notification when datagrams have completed
+      //! transmission on the wire)
+      interface TPM_Callback {
+        typedef long EVENT_CODE_TYPE;
+        typedef STRING_TYPE DIAGNOSTIC_MSG_TYPE;
+
+        enum CALLBACK_KIND_TYPE{
+          DATA,  //callback kind for a message incoming from the transport
+          EVENT, //callback kind for a change in event status
+          BOTH   //callback kind for both a message and change in event
+                 //status
+        };
+
+        readonly attribute CALLBACK_KIND_TYPE callback_kind;
+      
+        void Data_Callback_Handler (
+          in  CHANNEL_ID_TYPE     channel_id, 
+          in  TRANSACTION_ID_TYPE transaction_id, 
+          in  MESSAGE_TYPE        message,
+          in  HEADER_TYPE         tss_header, 
+          in  QoS_EVENT_TYPE      qos_parameters,
+          out RETURN_CODE_TYPE    return_code);
+    
+        void Event_Callback_Handler (
+          in  CHANNEL_ID_TYPE     channel_id, 
+          in  TRANSACTION_ID_TYPE transaction_id,
+          in  EVENT_TYPE          event,
+          in  EVENT_CODE_TYPE     event_code, 
+          in  DIAGNOSTIC_MSG_TYPE diagnostic_msg, 
+          out RETURN_CODE_TYPE    return_code);
+      };
+      
+      //! The TPM Interface
+      interface TPMTS {
+         
+        typedef sequence<CHANNEL_ID_TYPE> CHANNEL_ID_SEQ_TYPE;
+        
+        enum TPM_STATE_TYPE{
+          NORMAL,
+          TEST,
+          RESUME,
+          PAUSE,
+          SHUTDOWN,
+          SECURE
+        };
+        
+        enum LEVEL_OF_TEST_TYPE {
+          CBIT,
+          IBIT,
+          PBIT
+        };
+        
+        union STATE_CHANGE_DATA_TYPE switch(TPM_STATE_TYPE) {
+        //! Provide a list of channels which must have their associated
+        //! data cleared
+
+        case SECURE:
+          CHANNEL_ID_SEQ_TYPE channels_to_clear;
+        
+        //! Different levels of test to allow for destructive and
+        //! non-destructive testing (CBIT, IBIT, etc).
+        case TEST:
+          LEVEL_OF_TEST_TYPE test_level;
+        
+        //! The following cases don't have data associated with
+        //! them on a state change request:      
+        //! case NORMAL: //empty
+        //! case RESUME: //empty
+        //! case PAUSE: //empty
+        //! case SHUTDOWN: //empty
+        
+        };
+
+      
+        //! Initialize provides a method for use during startup to
+        //! initialize the transport hardware and the protocol.
+        //! Initialize would be called after each of the protocol binding
+        //! module's functions are registered with the service interface
+        void Initialize (
+          in  CONFIGURATION_RESOURCE configuration,
+          out RETURN_CODE_TYPE       return_code);
+      
+        //! Open_Channel establishes an endpoint connection with another
+        //! TS domain. The primary TS can establish a contract with the
+        //! underlying protocol and transport for security and quality of
+        //! service.
+        void Open_Channel (
+          in  CONNECTION_NAME_TYPE endpoint_name, 
+          in  DATA_BUFFER_TYPE     transport_config, 
+          in  DATA_BUFFER_TYPE     security_config, 
+          out CHANNEL_ID_TYPE      channel_id, 
+          out RETURN_CODE_TYPE     return_code);        
+    
+        void Close_Channel (
+          in  CHANNEL_ID_TYPE  channel_id, 
+          out RETURN_CODE_TYPE return_code);        
+    
+        //! State change is requested to control the transport, such as
+        //! sending the TPM into test or have the TPM temporarily suspend
+        //! communications. Data may be associated with the state change,
+        //! such as indicating the level of test to perform
+        void Request_TPM_State_Change (
+          in  TPM_STATE_TYPE         new_state, 
+          in  STATE_CHANGE_DATA_TYPE data, 
+          out RETURN_CODE_TYPE       return_code);
+    
+        //! Is_Data_Available allows users to retrieve which channels have
+        //! activity and can subsequently be read without blocking.  NULL
+        //! timeout allows the user to block until there is any data
+        //! received
+        void Is_Data_Available (
+          in  CHANNEL_ID_SEQ_TYPE channel_ids, 
+          in  TIMEOUT_TYPE        timeout, 
+          out CHANNEL_ID_SEQ_TYPE available_ids, 
+          out RETURN_CODE_TYPE    return_code);
+        
+        //! Used to monitor the health and availability of the transport.
+        //! The status would allow the user to continue to use the
+        //! transport or consider it a BUS FAIL
+        void Get_TPM_Status (
+          out EVENT_TYPE       status, 
+          out RETURN_CODE_TYPE return_code);
+        
+        //! Read_From_Transport allows the primary TS to read incoming
+        //! datagrams.  If a non-zero timeout is used, the call blocks
+        //! until data is received and processed by the protocol or the
+        //! timeout is reached. If used with isDataAvailable, a timeout
+        //! of 0 returns the datagram already processed by the protocol
+        //! otherwise if no data was received returns 0 bytes in the
+        //! message
+        void Read_From_Transport (
+          in     CHANNEL_ID_TYPE     channel_id,
+          in     TIMEOUT_TYPE        timeout,
+          out    TRANSACTION_ID_TYPE transaction_id,
+          inout  MESSAGE_TYPE        message,
+          out    HEADER_TYPE         TSS_header,
+          out    QoS_EVENT_TYPE      qos_parameters,
+          out    RETURN_CODE_TYPE    return_code);
+        
+        //! Write_To_Transport provides the ability to write a datagram
+        //! to the binding module for protocol processing and transport.
+        //! The TPM transmits the message within this method call with a
+        //! maxDelay of 0 or establish a pipeline of messages.
+        //! A send_TPM_event is used to release the buffers used by the
+        //! primary TS.
+        void Write_To_Transport (
+          in  CHANNEL_ID_TYPE     channel_id, 
+          in  TIMEOUT_TYPE        max_delay,
+          in  MESSAGE_TYPE        message,
+          in  HEADER_TYPE         TSS_header, 
+          in  TRANSACTION_ID_TYPE transaction_id,
+          out RETURN_CODE_TYPE    return_code);
+      
+        //! The callback functions are provided by the user and must be
+        //! registered for the binding module to call.
+        void Register_TPM_Callback (
+          in     CHANNEL_ID_TYPE    channel_id, 
+          inout  TPM_Callback       callback, 
+          out    RETURN_CODE_TYPE   return_code);
+        
+        void Unregister_TPM_Callback (
+          in  CHANNEL_ID_TYPE             channel_id,
+          in  TPM_Callback::CALLBACK_KIND_TYPE rcallback_kind, 
+          out RETURN_CODE_TYPE            return_code);
+      };          
+    };
+  };
+};
+
+#endif //! FACE_TSS_TPM

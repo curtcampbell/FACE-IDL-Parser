@@ -1,0 +1,23 @@
+package us.opengroup.FACE;
+
+/**
+ * Holder class for IDL {@code out} and {@code inout} parameters
+ * of immutable Java types.
+ *
+ * <p>FACE Technical Standard 3.2 §K.4.1
+ */
+public class Holder<T> {
+
+    /** The held value. */
+    public T value;
+
+    /** Constructs a holder with a {@code null} initial value. */
+    public Holder() {}
+
+    /**
+     * Constructs a holder with the given initial value.
+     *
+     * @param initial the initial value
+     */
+    public Holder(T initial) { value = initial; }
+}

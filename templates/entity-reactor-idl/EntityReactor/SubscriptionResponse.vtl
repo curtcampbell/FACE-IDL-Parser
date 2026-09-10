@@ -1,0 +1,59 @@
+## SubscriptionResponse.vtl
+## Generates SubscriptionResponse.idl — ValidationError, ValidationResult, SubscriptionResponse.
+## Content is effectively static; module nesting and guard come from $model.
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_SUBSCRIPTIONRESPONSE_IDL")
+//! Source file: ${model.sourcePathFor("SubscriptionResponse.idl")}
+//!
+//! Reactor-to-client response on the ER_SUBSCRIPTION connection.
+//! On success: return_code = NO_ERROR, notify_connection is populated.
+//! On failure: return_code = INVALID_PARAM, validation_result carries
+//! the Query Compiler's error report [ER-048].
+//!
+//! Supporting types defined here (exclusively consumed by SubscriptionResponse):
+//!   ValidationError  — one Query Compiler error for a single condition
+//!   ValidationResult — aggregates all errors from one SubscriptionRequest
+//!
+//! Dependencies (via SubscriptionRequest.idl):
+//!   MAX_CONDITIONS (used in ValidationResult.errors sequence bound)
+//! Dependencies (via FACE/TSS/Common.idl):
+//!   ::FACE::TSS::CONNECTION_NAME_TYPE
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+\#include <FACE/TSS/Common.idl>
+\#include "SubscriptionRequest.idl"
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! One validation error produced by the Query Compiler for a single
+${contentIndent}  //! condition string in the originating SubscriptionRequest.
+${contentIndent}  struct ValidationError {
+${contentIndent}    unsigned long        condition_index;  //! Index into SubscriptionRequest.conditions
+${contentIndent}    ::FACE::STRING_TYPE  error_message;    //! Human-readable description of the error
+${contentIndent}  };
+
+${contentIndent}  //! Aggregates all validation errors from one SubscriptionRequest compilation.
+${contentIndent}  //! An empty errors sequence indicates the subscription would be accepted [ER-010].
+${contentIndent}  struct ValidationResult {
+${contentIndent}    sequence<ValidationError, MAX_CONDITIONS> errors;
+${contentIndent}  };
+
+${contentIndent}  //! Reactor-to-client response on the ER_SUBSCRIPTION connection.
+${contentIndent}  struct SubscriptionResponse {
+${contentIndent}    ::FACE::RETURN_CODE_TYPE          return_code;        //! Compilation result
+${contentIndent}    ::FACE::TSS::CONNECTION_NAME_TYPE notify_connection;  //! Open this to activate subscription
+${contentIndent}    ValidationResult                  validation_result;  //! Populated on failure
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

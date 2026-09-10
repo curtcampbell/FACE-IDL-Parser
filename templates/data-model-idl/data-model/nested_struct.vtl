@@ -1,0 +1,41 @@
+## nested_struct.vtl
+## Generates one IDL struct file per unique nested/supporting platform struct type.
+## @foreach  nested_struct
+## @filename ${nestedIdlFilePath}
+##
+## Context (from IdlGeneratorPipeline.nestedStructContext()):
+##   $model            — EntityModel
+##   $nestedStruct     — FieldDescriptor  (idlType = struct name, nestedFields = sub-fields)
+##   $idlGuard         — String            (e.g. "FACE_DM_SAMPLEUSM_M1_IDL")
+##   $idlSourcePath    — String            (e.g. "FACE/DM/SampleUSM/Entities/M1.idl")
+##   $moduleOpeners    — List<String>      (indented "module X {" lines)
+##   $moduleClosers    — List<String>      (indented "}; // module X" lines, reverse order)
+##   $contentIndent    — String            (spaces matching module nesting depth)
+##
+//! Source file: ${idlSourcePath}
+//!
+//! Origin: ER IDL Generator — generated from FACE UoP model (TSS data model).
+//!
+//! Supporting platform struct: ${nestedStruct.idlType}
+
+#ifndef ${idlGuard}
+\#define ${idlGuard}
+
+\#include <FACE/Common.idl>
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! Platform supporting struct: ${nestedStruct.idlType}
+${contentIndent}  struct ${nestedStruct.idlType} {
+#foreach ($field in $nestedStruct.nestedFields)
+${contentIndent}    ${field.idlType}  ${field.name};  //! ${field.comment}
+#end
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${idlGuard}

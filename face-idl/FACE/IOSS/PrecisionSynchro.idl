@@ -1,0 +1,55 @@
+//! Source file: FACE/IOSS/PrecisionSynchro.idl
+
+#ifndef FACE_IOSS_PRECISIONSYNCHRO
+#define FACE_IOSS_PRECISIONSYNCHRO
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the Precision Synchro I/O Service.
+    module PrecisionSynchro {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      enum ANGLE_INTENT_TYPE {
+        USE_ANGLE,      // move to given angle at given velocity
+        DISREGARD_ANGLE // disregard given angle and simply turn at given
+                        //   velocity
+      };
+      struct ReadWriteBuffer {
+        ANGLE_INTENT_TYPE angle_intent;
+        long long         angle;
+        long long         velocity;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! Minimum value
+      const IO_PARAMETER_ID_TYPE MIN_VALUE = 0; // FACE_LONGLONG
+      //! Maximum value
+      const IO_PARAMETER_ID_TYPE MAX_VALUE = 1; // FACE_LONGLONG
+      //! Initial value
+      const IO_PARAMETER_ID_TYPE INIT_VALUE = 2; // FACE_LONGLONG
+      //! Data buffer precision
+      const IO_PARAMETER_ID_TYPE PRECISION = 3; // FACE_LONGDOUBLE
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      //!
+      //! Note there are no defined bus status types for the
+      //! PrecisionSynchro I/O Service.
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<PrecisionSynchro::ReadWriteBuffer>
+      PrecisionSynchro;
+  };
+};
+
+#endif //! FACE_IOSS_PRECISIONSYNCHRO

@@ -1,0 +1,39 @@
+## SubscriptionRequest_SubscriptionResponse.vtl
+## Generates TypeTS/SubscriptionRequest_SubscriptionResponse.idl.
+## Instantiates FACE Extended TypedTS for the subscription request/response pair.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_SUBSCRIPTIONREQUEST_SUBSCRIPTIONRESPONSE_IDL")
+#set ($dmPrefix = $model.idlQualifiedPrefix)
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("SubscriptionRequest_SubscriptionResponse.idl")}
+//!
+//! Extended TypedTS instantiation for the SubscriptionRequest/SubscriptionResponse pair.
+//! FACE Technical Standard Edition 3.2, §4.8.4.2
+//!
+//! Resulting qualified names:
+//!   ${tssPrefix}SubscriptionRequest_SubscriptionResponse::Read_Callback
+//!   ${tssPrefix}SubscriptionRequest_SubscriptionResponse::TypedTS
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/Extended.idl>
+\#include "../EntityReactor/SubscriptionResponse.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${dmPrefix}SubscriptionRequest   SubscriptionRequest_t;
+${tssContentIndent}  typedef ${dmPrefix}SubscriptionResponse  SubscriptionResponse_t;
+
+${tssContentIndent}  module ::FACE::TSS::Typed<SubscriptionRequest_t, SubscriptionResponse_t>
+${tssContentIndent}      SubscriptionRequest_SubscriptionResponse;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

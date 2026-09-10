@@ -1,0 +1,50 @@
+//! Source file: FACE/TSS_Message_Type_Utilities.idl
+
+#ifndef	FACE_TSS_MESSAGE_TYPE_UTILITY
+#define	FACE_TSS_MESAAGE_TYPE_UTILITY
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    interface Message_Type_Utility {
+
+//! Create allocates memory and returns a buffer pointer in the TSS 
+//! MESSAGE_TYPE aligned with the USM (PCS, PSSS, or TSS) data view type.  Data 
+//! view types are generally unique (C/C++/ada/java language, strings, 
+//! sequences, etc). 
+//! If GUID is set to CALLEE_PROVIDES_GUID, create returns a message_buffer
+//! with a valid GUID and data_buffer formatted in memory to the message view
+//! upon returning; otherwise the GUID provided is used.
+//! Create may pre-allocate a shallow or deep pool of memory of message.
+//! Copy may re-size a shallow allocation.
+
+      void Create ( 
+        inout   MESSAGE_TYPE               message_buffer,
+        out   RETURN_CODE_TYPE          return_code);
+ 
+//! Copy creates a deep copy of source buffer to provide another instance of 
+//! the same data view type.  Destination buffer is created prior to calling 
+//! copy with the GUID of the dest_buffer set to CALLEE_PROVIDES_GUID.  
+    void Copy ( 
+          in   MESSAGE_TYPE                   src_buffer,     
+          inout    MESSAGE_TYPE              dest_buffer, 
+          out   RETURN_CODE_TYPE         return_code);
+
+//! Destroy reclaims  / cleans up any memory if needed
+ void Destroy (
+        inout   MESSAGE_TYPE               message_buffer, 
+        out   RETURN_CODE_TYPE           return_code);
+    };
+
+  interface MT_Utility_IF_Lookup{
+//! Used to retrieve the interface for allocating and reclaiming memory and 
+//! copying a data view type. 
+      void Get_Message_Helper(
+         in  GUID_TYPE             message_type_id,
+         out Message_Type_Utility  message_helper,
+         out RETURN_CODE_TYPE      return_code);
+};
+};	
+};	
+#endif // FACE_TSS_MESSAGE_TYPE_UTILITY

@@ -1,0 +1,38 @@
+//! Source file: FACE/TSS/Serialization.idl
+
+#ifndef FACE_TSS_SERIALIZATION
+#define FACE_TSS_SERIALIZATION
+
+#include <FACE/TSS/Common.idl>
+#include <FACE/TSS/Primitive_Marshalling.idl>
+
+module FACE {
+  module TSS {
+    interface Message_Serialization {
+      void Serialize (
+        in    MESSAGE_TYPE               message,
+        inout DATA_BUFFER_TYPE           buffer,
+        inout TSS::Primitive_Marshalling marshalling_interface,
+        out   BYTE_SIZE_TYPE             bytes_consumed,
+        out   RETURN_CODE_TYPE           return_code);
+
+      void DeSerialize (
+        in    DATA_BUFFER_TYPE           buffer, 
+        inout MESSAGE_TYPE               message,
+        inout TSS::Primitive_Marshalling marshalling_interface,
+        out   BYTE_SIZE_TYPE             bytes_consumed,
+        out   RETURN_CODE_TYPE           return_code);
+    };
+
+    interface Serialization {
+      //! The TPM gets the serialization interface for the message type
+      //! from the TS
+      void Get_Serialization (
+        in  GUID_TYPE             message_type_id,
+        out Message_Serialization serialization,
+        out RETURN_CODE_TYPE      return_code);
+    };
+  };
+};
+
+#endif //! FACE_TSS_SERIALIZATION

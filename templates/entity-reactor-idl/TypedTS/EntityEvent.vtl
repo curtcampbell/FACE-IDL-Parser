@@ -1,0 +1,37 @@
+## EntityEvent.vtl  (TypeTS)
+## Generates TypeTS/EntityEvent.idl.
+## Instantiates FACE TypedTS for publish/subscribe EntityEvent delivery.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_ENTITYEVENT_IDL")
+#set ($dmPrefix = $model.idlQualifiedPrefix)
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("EntityEvent.idl")}
+//!
+//! TypedTS instantiation for EntityEvent notification delivery.
+//! FACE Technical Standard Edition 3.2, §4.8.4.1
+//!
+//! Resulting qualified names:
+//!   ${tssPrefix}EntityEvent::Read_Callback
+//!   ${tssPrefix}EntityEvent::TypedTS
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/TypedTS.idl>
+\#include "../EntityReactor/EntityEvent.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${dmPrefix}EntityEvent  EntityEvent_t;
+
+${tssContentIndent}  module ::FACE::TSS::Typed<EntityEvent_t> EntityEvent;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

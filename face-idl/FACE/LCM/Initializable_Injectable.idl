@@ -1,0 +1,22 @@
+//! Source file: FACE/LCM/Initializable_Injectable.idl
+
+#ifndef FACE_LCM_INITIALIZABLE_INJECTABLE
+#define FACE_LCM_INITIALIZABLE_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/LCM/Initializable.idl>
+
+module FACE {
+  module LCM {
+    module Initializable {
+
+      //! Template module instantiation for Initializable Interface
+      module Injectable<
+        FACE::LCM::Initializable::InitializableInstance
+      > InitializableInstance_Injectable;
+
+    }; // module Initializable
+  }; // module LCM
+}; // module FACE
+
+#endif //! FACE_LCM/INITIALIZABLE_INJECTABLE

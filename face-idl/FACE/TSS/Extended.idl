@@ -1,0 +1,46 @@
+//! Source file: FACE/TSS/Extended.idl
+
+#ifndef FACE_TSS_EXTENDED
+#define FACE_TSS_EXTENDED
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    module Typed<typename DATATYPE_TYPE, typename RESPONSE_DATATYPE> {
+
+      interface Read_Callback {        
+        void Callback_Handler (
+           in    CONNECTION_ID_TYPE  connection_id,
+           in    TRANSACTION_ID_TYPE transaction_id,
+           in    RESPONSE_DATATYPE   message,
+           in    HEADER_TYPE         header,
+           in    QoS_EVENT_TYPE      qos_parameters,
+           out   RETURN_CODE_TYPE    return_code);
+      };    
+
+      interface TypedTS {
+        void Send_Message_Blocking (
+          in    CONNECTION_ID_TYPE connection_id,
+          in    TIMEOUT_TYPE       timeout,
+          in    DATATYPE_TYPE      message,
+          out   HEADER_TYPE        header,
+          out   QoS_EVENT_TYPE     qos_parameters,
+          inout RESPONSE_DATATYPE  return_data,
+          out   RETURN_CODE_TYPE   return_code);        
+
+        //! Note: The callback parameter is semantically an in parameter
+        //!      but is inout to avoid an undesirable mapping in C++.
+        void Send_Message_Async (
+          in    CONNECTION_ID_TYPE  connection_id,
+          in    TIMEOUT_TYPE        timeout,
+          inout TRANSACTION_ID_TYPE transaction_id,
+          in    DATATYPE_TYPE       message,
+          inout Read_Callback       callback,
+          out   RETURN_CODE_TYPE    return_code);
+      };
+    };
+  };
+};
+
+#endif //! FACE_TSS_EXTENDED

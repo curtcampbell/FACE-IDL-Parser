@@ -1,0 +1,77 @@
+//! Source file: FACE/IOSS/Serial.idl
+
+#ifndef FACE_IOSS_SERIAL
+#define FACE_IOSS_SERIAL
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the Serial I/O Service.
+    module Serial {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      const unsigned short MAX_BYTE_COUNT = 65535;
+      typedef sequence<octet, MAX_BYTE_COUNT> DATA_BUFFER_TYPE;
+      struct ReadWriteBuffer {
+        octet            channel; // channel on which the message 
+                                  // is transmitted or received
+        DATA_BUFFER_TYPE data;    // serial data
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      typedef short OPERATIONAL_MODE_TYPE;
+      const OPERATIONAL_MODE_TYPE RS_232 = 0;
+      const OPERATIONAL_MODE_TYPE RS_422 = 1;
+      const OPERATIONAL_MODE_TYPE RS_485 = 2;
+
+      typedef unsigned short FLOW_CONTROL_TYPE;
+      const FLOW_CONTROL_TYPE NONE = 0;
+      const FLOW_CONTROL_TYPE XON_XOFF = 1;
+      const FLOW_CONTROL_TYPE RTS_CTS = 2;
+      const FLOW_CONTROL_TYPE DSR_DTR = 3;
+
+      typedef unsigned short PARITY_TYPE;
+      const PARITY_TYPE PARITY_NONE = 0;
+      const PARITY_TYPE PARITY_ODD = 1;
+      const PARITY_TYPE PARITY_EVEN = 2;
+      const PARITY_TYPE PARITY_MARK = 3;
+      const PARITY_TYPE PARITY_SPACE = 4;
+
+      //! Physical serial port number
+      const IO_PARAMETER_ID_TYPE CHANNEL_NUM = 0; // FACE_OCTET
+      //! Serial port operational mode (OPERATIONAL_MODE_TYPE)
+      const IO_PARAMETER_ID_TYPE MODE = 1; // FACE_SHORT
+      //! Baud rate for serial port
+      const IO_PARAMETER_ID_TYPE BAUD_RATE = 2; // FACE_LONG
+      //! Number of data bits to be configured
+      const IO_PARAMETER_ID_TYPE DATA_BITS = 3; // FACE_SHORT
+      //! Number of stop bits for serial port
+      const IO_PARAMETER_ID_TYPE STOP_BITS = 4; // FACE_SHORT
+      //! Parity for serial port (PARITY_TYPE)
+      const IO_PARAMETER_ID_TYPE PARITY = 5; // FACE_USHORT
+      //! Flow control (FLOW_CONTROL_TYPE)
+      const IO_PARAMETER_ID_TYPE FLOW_CONTROL = 6; // FACE_USHORT
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      const BUS_STATUS_TYPE DEVICE_OPERATIONAL = 0;
+      const BUS_STATUS_TYPE OVERRUN_ERROR      = 1;
+      const BUS_STATUS_TYPE PARITY_ERROR       = 2;
+      const BUS_STATUS_TYPE FRAMING_ERROR      = 3;
+      const BUS_STATUS_TYPE BREAK_ERROR        = 4;
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<Serial::ReadWriteBuffer> Serial;
+  };
+};
+
+#endif //! FACE_IOSS_SERIAL

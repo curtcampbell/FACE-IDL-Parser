@@ -1,0 +1,195 @@
+# ============================================================================
+# SampleModel.yaml
+#
+# Entity source file for the FACE Entity Reactor code generator.
+# Drives generation of all IDL artifacts under IDL/Entities/,
+# IDL/EntityReactor/, and IDL/TypeTS/.
+#
+# Format keys use snake_case throughout.  See YamlModelReader for the full
+# schema description.
+# ============================================================================
+
+model_name:          SampleModel
+idl_module:          FACE.DM.SampleModel
+tss_idl_module:      FACE.TSS.SampleModel
+cpp_namespace:       "FACE::DM::SampleModel"
+struct_name_pattern: "{name}Entity"
+
+# ----------------------------------------------------------------------------
+# Supporting Structs
+#
+# Shared value-type structs used as field types across multiple entities.
+# Defined here once; each entity that references one by idl_type need not
+# repeat nested_fields inline.
+# ----------------------------------------------------------------------------
+supporting_structs:
+
+  # --------------------------------------------------------------------------
+  # GeoPosition — WGS-84 geographic position
+  # Used as the 'position' field of Track, Threat, and Waypoint entities.
+  # --------------------------------------------------------------------------
+  - name:    GeoPosition
+    comment: "WGS-84 geographic position"
+    fields:
+      - name:                 latitude
+        idl_type:             double
+        attribute_value_type: AV_DOUBLE
+        comment:              "Degrees WGS-84, range -90.0 .. +90.0"
+      - name:                 longitude
+        idl_type:             double
+        attribute_value_type: AV_DOUBLE
+        comment:              "Degrees WGS-84, range -180.0 .. +180.0"
+      - name:                 altitude_m
+        idl_type:             float
+        attribute_value_type: AV_FLOAT
+        comment:              "Metres above mean sea level"
+
+# ----------------------------------------------------------------------------
+# Platform Entities
+#
+# Declaration order here does NOT determine EntityTypeEnum values.
+# The generator sorts entities alphabetically by simple_name before assigning
+# typeEnumValue, so:
+#   Threat  → 1
+#   Track   → 2
+#   Waypoint → 3
+# ----------------------------------------------------------------------------
+entities:
+
+  # --------------------------------------------------------------------------
+  # Track — a moving track (aircraft, surface vehicle, sensor-detected target)
+  # --------------------------------------------------------------------------
+  - simple_name:    Track
+    qualified_path: FACE.DM.SampleModel.Track
+    description:    "A moving track — an aircraft, surface vehicle, or sensor-detected target."
+    includes:
+      - GeoPosition.idl
+
+    fields:
+      - name:                 track_id
+        idl_type:             "::FACE::GUID_TYPE"
+        attribute_value_type: AV_GUID
+        comment:              "Unique track identifier"
+
+      - name:     position
+        idl_type: GeoPosition
+        nested:   true
+        comment:  "WGS-84 geographic position"
+        # fields resolved from supporting_structs.GeoPosition
+
+      - name:                 heading_deg
+        idl_type:             float
+        attribute_value_type: AV_FLOAT
+        comment:              "True heading, degrees 0.0 .. 360.0"
+
+      - name:                 speed_kts
+        idl_type:             float
+        attribute_value_type: AV_FLOAT
+        comment:              "Speed in knots"
+
+      - name:                 callsign
+        idl_type:             "::FACE::STRING_TYPE"
+        attribute_value_type: AV_STRING
+        comment:              "Alphanumeric callsign, max 255 chars"
+
+      - name:                 active
+        idl_type:             boolean
+        attribute_value_type: AV_BOOLEAN
+        comment:              "Track is currently active"
+
+      - name:                 last_update_time
+        idl_type:             "::FACE::SYSTEM_TIME_TYPE"
+        attribute_value_type: AV_SYSTEM_TIME
+        comment:              "Nanoseconds since UNIX epoch"
+
+  # --------------------------------------------------------------------------
+  # Threat — a declared or inferred threat
+  # --------------------------------------------------------------------------
+  - simple_name:    Threat
+    qualified_path: FACE.DM.SampleModel.Threat
+    description:    "A declared or inferred threat."
+    includes:
+      - GeoPosition.idl
+
+    supporting_enums:
+      - name:    ThreatLevel
+        comment: "Ordinal classification of a threat. Maps to AV_INT64 per ERS Appendix D (enums treated as underlying integer)."
+        values:
+          - name:    THREAT_UNKNOWN
+            comment: "0 — Classification not available"
+          - name:    THREAT_LOW
+            comment: "1 — Minimal threat"
+          - name:    THREAT_MEDIUM
+            comment: "2 — Moderate threat"
+          - name:    THREAT_HIGH
+            comment: "3 — Significant threat"
+          - name:    THREAT_CRITICAL
+            comment: "4 — Immediate threat"
+
+    fields:
+      - name:                 threat_id
+        idl_type:             "::FACE::GUID_TYPE"
+        attribute_value_type: AV_GUID
+        comment:              "Unique threat identifier"
+
+      - name:     position
+        idl_type: GeoPosition
+        nested:   true
+        comment:  "WGS-84 geographic position"
+        # fields resolved from supporting_structs.GeoPosition
+
+      - name:                 level
+        idl_type:             ThreatLevel
+        attribute_value_type: AV_INT64
+        comment:              "Threat classification"
+
+      - name:                 range_nm
+        idl_type:             float
+        attribute_value_type: AV_FLOAT
+        comment:              "Slant range in nautical miles"
+
+      - name:                 engaged
+        idl_type:             boolean
+        attribute_value_type: AV_BOOLEAN
+        comment:              "Threat is currently engaged"
+
+      - name:                 detected_at
+        idl_type:             "::FACE::SYSTEM_TIME_TYPE"
+        attribute_value_type: AV_SYSTEM_TIME
+        comment:              "Detection timestamp, nanoseconds since epoch"
+
+  # --------------------------------------------------------------------------
+  # Waypoint — a named navigation waypoint
+  # --------------------------------------------------------------------------
+  - simple_name:    Waypoint
+    qualified_path: FACE.DM.SampleModel.Waypoint
+    description:    "A named navigation waypoint."
+    includes:
+      - GeoPosition.idl
+
+    fields:
+      - name:                 waypoint_id
+        idl_type:             "::FACE::GUID_TYPE"
+        attribute_value_type: AV_GUID
+        comment:              "Unique waypoint identifier"
+
+      - name:     position
+        idl_type: GeoPosition
+        nested:   true
+        comment:  "WGS-84 geographic position"
+        # fields resolved from supporting_structs.GeoPosition
+
+      - name:                 name
+        idl_type:             "::FACE::STRING_TYPE"
+        attribute_value_type: AV_STRING
+        comment:              "Human-readable waypoint name"
+
+      - name:                 sequence_number
+        idl_type:             "unsigned long"
+        attribute_value_type: AV_UINT32
+        comment:              "Position in route sequence"
+
+      - name:                 active
+        idl_type:             boolean
+        attribute_value_type: AV_BOOLEAN
+        comment:              "Waypoint is currently active"

@@ -1,0 +1,37 @@
+## SubscriptionRequest_SubscriptionResponse_Injectable.vtl
+## Generates TypeTS/SubscriptionRequest_SubscriptionResponse_Injectable.idl.
+## Instantiates FACE Injectable for the subscription TypedTS pair.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_SUBSCRIPTIONREQUEST_SUBSCRIPTIONRESPONSE_INJECTABLE_IDL")
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("SubscriptionRequest_SubscriptionResponse_Injectable.idl")}
+//!
+//! Extended TypedTS Injectable instantiation for the SubscriptionRequest/SubscriptionResponse pair.
+//! FACE Technical Standard Edition 3.2, §4.8.4.2
+//!
+//! Resulting qualified name:
+//!   ${tssPrefix}SubscriptionRequest_SubscriptionResponse_Injectable::Injectable
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Injectable.idl>
+\#include "SubscriptionRequest_SubscriptionResponse.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${tssPrefix}SubscriptionRequest_SubscriptionResponse::TypedTS
+${tssContentIndent}      SubscriptionRequest_SubscriptionResponse_TypedTS_t;
+
+${tssContentIndent}  module ::FACE::Injectable<SubscriptionRequest_SubscriptionResponse_TypedTS_t>
+${tssContentIndent}      SubscriptionRequest_SubscriptionResponse_Injectable;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

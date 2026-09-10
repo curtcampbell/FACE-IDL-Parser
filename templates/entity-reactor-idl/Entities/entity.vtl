@@ -1,0 +1,63 @@
+## entity.vtl
+## Generates one Platform Entity IDL struct file.
+## @foreach  entity
+##
+## Context injected by IdlGeneratorPipeline.generateEntities():
+##   $model            — EntityModel
+##   $entity           — EntityDescriptor  (current entity)
+##   $structName       — String            (e.g. "TrackEntity")
+##   $idlGuard         — String            (e.g. "FACE_DM_SAMPLEMODEL_TRACKENTITY_IDL")
+##   $idlSourcePath    — String            (e.g. "FACE/DM/SampleModel/Entities/TrackEntity.idl")
+##   $idlQualifiedPath — String            (e.g. "FACE.DM.SampleModel.Track")
+##   $moduleOpeners    — List<String>      (indented "module X {" lines)
+##   $moduleClosers    — List<String>      (indented "}; // module X" lines, reverse order)
+##   $contentIndent    — String            (spaces matching module nesting depth)
+##
+//! Source file: ${idlSourcePath}
+//!
+//! Origin: ER IDL Generator — generated from entity data model.
+//!
+//! Platform Entity:  ${entity.simpleName}
+//! Qualified path:   ${idlQualifiedPath}
+//! struct_name_pattern ${model.structNamePattern} => struct name: ${structName}
+//!
+//! ${entity.description}
+//!
+//! Field position_index values (scoped to ${structName}, starting at zero [ER-083]):
+#foreach ($field in $entity.fields)
+//!   ${field.name} : ${field.positionIndex}  ${field.positionIndexComment}
+#end
+
+#ifndef ${idlGuard}
+\#define ${idlGuard}
+
+\#include <FACE/Common.idl>
+#foreach ($inc in $entity.includes)
+\#include "$inc"
+#end
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+#foreach ($enum in $entity.supportingEnums)
+${contentIndent}  //! ${enum.comment}
+${contentIndent}  enum ${enum.name} {
+#foreach ($val in $enum.values)
+${contentIndent}    ${val.name}#if ($foreach.hasNext),#end   //! ${val.comment}
+#end
+${contentIndent}  };
+${contentIndent}
+#end
+${contentIndent}  //! ${entity.description}. Platform Entity: ${idlQualifiedPath}.
+${contentIndent}  struct ${structName} {
+#foreach ($field in $entity.fields)
+${contentIndent}    ${field.idlType}  ${field.name};  //! ${field.comment}
+#end
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${idlGuard}

@@ -1,0 +1,73 @@
+// SampleModel.idl
+//
+// FACE IDL representation of the SampleModel entity domain.
+// Used to exercise the IDL-input path of the Entity Reactor Generator:
+//
+//   IdlParser → IdlAstBuilder → IdlSpecification → LanguageBindingPipeline
+//
+// This file should produce the same C++ and Python output as processing
+// SampleModel.yaml through the YAML → ModelToIdlAdapter path.
+//
+// FACE Technical Standard 3.2 §4.14 type conventions are used throughout.
+// ::FACE::GUID_TYPE, ::FACE::STRING_TYPE, and ::FACE::SYSTEM_TIME_TYPE are
+// declared in <FACE/Common.idl>; that include is silently skipped by the
+// generator's include resolver when Common.idl is not part of the generation
+// run.
+
+#pragma once
+#include <FACE/Common.idl>
+
+module FACE {
+  module DM {
+    module SampleModel {
+
+      //! WGS-84 geographic position (nested struct shared by all entities).
+      struct GeoPosition {
+        double latitude;    //! Degrees WGS-84, range -90.0 .. +90.0
+        double longitude;   //! Degrees WGS-84, range -180.0 .. +180.0
+        float  altitude_m;  //! Metres above mean sea level
+      };
+
+      //! Ordinal classification of a threat.
+      //! Maps to AV_INT64 per ERS Appendix D.
+      enum ThreatLevel {
+        THREAT_UNKNOWN,   //! Classification not available
+        THREAT_LOW,       //! Minimal threat
+        THREAT_MEDIUM,    //! Moderate threat
+        THREAT_HIGH,      //! Significant threat
+        THREAT_CRITICAL   //! Immediate threat
+      };
+
+      //! A declared or inferred threat. Platform Entity.
+      struct ThreatEntity {
+        ::FACE::GUID_TYPE        threat_id;    //! Unique threat identifier
+        GeoPosition              position;     //! WGS-84 geographic position
+        ThreatLevel              level;        //! Threat classification
+        float                    range_nm;     //! Slant range, nautical miles
+        boolean                  engaged;      //! Threat is currently engaged
+        ::FACE::SYSTEM_TIME_TYPE detected_at;  //! Detection timestamp, ns since epoch
+      };
+
+      //! A moving track (aircraft, surface vehicle, sensor-detected target). Platform Entity.
+      struct TrackEntity {
+        ::FACE::GUID_TYPE        track_id;         //! Unique track identifier
+        GeoPosition              position;          //! WGS-84 geographic position
+        float                    heading_deg;       //! True heading, degrees 0.0 .. 360.0
+        float                    speed_kts;         //! Speed in knots
+        ::FACE::STRING_TYPE      callsign;          //! Alphanumeric callsign
+        boolean                  active;            //! Track is currently active
+        ::FACE::SYSTEM_TIME_TYPE last_update_time;  //! Nanoseconds since UNIX epoch
+      };
+
+      //! A named navigation waypoint. Platform Entity.
+      struct WaypointEntity {
+        ::FACE::GUID_TYPE   waypoint_id;       //! Unique waypoint identifier
+        GeoPosition         position;          //! WGS-84 geographic position
+        ::FACE::STRING_TYPE name;              //! Human-readable waypoint name
+        unsigned long       sequence_number;   //! Position in route sequence
+        boolean             active;            //! Waypoint is currently active
+      };
+
+    }; // module SampleModel
+  }; // module DM
+}; // module FACE

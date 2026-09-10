@@ -1,0 +1,208 @@
+//! Source file: FACE/Configuration.idl
+
+#ifndef FACE_CONFIGURATION
+#define FACE_CONFIGURATION
+
+#include <FACE/Common.idl>
+
+module FACE {
+
+ //! This defines the Configuration Application Programming Interface.
+ interface Configuration {
+
+  //! This type is used to represent the handle used during a session
+  //! with a configuration container.
+  typedef long HANDLE_TYPE;
+
+  //! This type is used to pass implementation specific initialization 
+  //! information to a Configuration API implementation.
+  typedef STRING_TYPE INITIALIZATION_TYPE;
+
+  //! This type is used to represent the name of a configuration 
+  //! container.
+  //! The contents of a configuration container are accessed during a
+  //! session.
+  typedef STRING_TYPE CONTAINER_NAME_TYPE;
+
+  //! This type is used to represent the name of a configuration set
+  //! within a configuration container.
+  typedef STRING_TYPE SET_NAME_TYPE;
+
+  //! This type is used to represent the length of the buffer or
+  //! amount of data returned by Read().
+  typedef long BUFFER_SIZE_TYPE;
+
+  //! This type is used to represent the desired offset used with 
+  //! Seek().
+  typedef long OFFSET_TYPE;
+
+  //! This type is used to represent the parameter to
+  //! Seek(). It indicates the manner in which the offset is to be
+  //! interpreted.
+  enum WHENCE_TYPE {
+   //! This indicates that the offset value is to be interpreted as an
+   //! offset from the beginning of the file. The offset should be a
+   //! positive number and represent a position in the file.
+   SEEK_FROM_START,
+   //! This indicates that the offset value is to be interpreted as an
+   //! offset from the current position in the file. The offset may be
+   //! a positive or negative number to seek backward or forward in the
+   //! in the file.
+   SEEK_FROM_CURRENT,
+   //! This indicates that the offset value is to be interpreted as an
+   //! offset from the end of the file. The offset should be a
+   //! negative number and represent how many bytes to backup.
+   SEEK_FROM_END
+  };
+
+  //! The Initialize method is used to initialize the Configuration
+  //! implementation.
+  //!
+  //! @param[in] initialization_information provides implementation
+  //!   specific information which assists in the initialization of
+  //!   a Configuration API implementation.
+  //! @param[out] return_code contains a status code indicating success
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!   successful completion of the operation.
+  //! @return INVALID_PARAM to indicate that the @a return_code pointer
+  //!   (in appropriate languages) is invalid.
+  void Initialize
+  ( in INITIALIZATION_TYPE  initialization_information,
+   out RETURN_CODE_TYPE    return_code);
+
+  //! The @a Open method is used to establish a session with the
+  //! Configuration implementation.
+  //!
+  //! @param[in] container_name is the name of the configuration
+  //!   container to open a session with.
+  //! @param[out] handle contains a handle to be used on subsequent 
+  //!   calls during this session.
+  //! @param[out] return_code contains a status code indicating success
+  //!   or failure
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!   successful completion of the operation.
+  //! @return INVALID_CONFIG is returned in @a return_code to indicate
+  //!   that the @a configuration container specified is invalid.
+  //! @return INVALID_PARAM is returned in @a return_code to indicate
+  //!   that the @a handle pointer (in appropriate languages) is
+  //!   invalid.
+  //! @return INVALID_MODE is returned in @a return_code to indicate
+  //!   the caller does not have permission to access the
+  //!   @a configuration container.
+  void Open
+  ( in CONTAINER_NAME_TYPE container_name,
+   out HANDLE_TYPE     handle,
+   out RETURN_CODE_TYPE   return_code);
+
+  //! The @a Get_Size method is used to obtain the size of a particular
+  //! configuration set from the configuration container associated with
+  //! this session.
+  //!
+  //! @param[in] handle indicates the current session.
+  //! @param[in] set_name indicates the name of the configuration
+  //!     set to obtain the value of.
+  //! @param[out] size contains the size in bytes of the set.
+  //! @param[out] return_code contains a status code indicating success
+  //!     or failure.
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!     successful completion of the operation.
+  //! @return INVALID_CONFIG is returned in @a return_code to indicate
+  //!     that the @a handle is invalid.
+  //! @return INVALID_PARAM is returned in @a return_code to indicate
+  //!     that one of the pointer arguments (in the appropriate languages)
+  //!     is invalid.
+  //! @return NOT_AVAILABLE is returned in @a return_code to indicate
+  //!     that the size of the set is not available based on the backend
+  //!     media adapter used for this configuration information.
+  //!
+  //! @note For streaming configuration information sources, the
+  //!    @a set_name parameter should be set to "" or the empty string.
+  void Get_Size
+  ( in  HANDLE_TYPE        handle,
+    in  SET_NAME_TYPE      set_name,
+    out BUFFER_SIZE_TYPE   size,
+    out RETURN_CODE_TYPE   return_code);
+
+  //! The @a Read method is used to obtain configuration information
+  //! from the configuration container associated with this session.
+  //!
+  //! @param[in] handle indicates the current session.
+  //! @param[in] set_name indicates the name of the configuration
+  //!   set to obtain the value of.
+  //! @param[inout] buffer points to the buffer to be filled in with
+  //!   configuration information.
+  //! @param[in] buffer_size indicates the size of the @a buffer and
+  //!   the maximum number of bytes which can be returned.
+  //! @param[out] bytes_read contains the number of bytes read on
+  //!   a successful read.
+  //! @param[out] return_code contains a status code indicating success
+  //!   or failure
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!   successful completion of the operation.
+  //! @return INVALID_CONFIG is returned in @a return_code to indicate
+  //!   that the @a handle is invalid.
+  //! @return INVALID_PARAM is returned in @a return_code to indicate
+  //!   that one of the pointer arguments (in the appropriate 
+  //!   languages) is invalid.
+  //! @return NOT_AVAILABLE is returned in @a return_code to indicate
+  //!   that the entire data stream associated with this configuration
+  //!   set has been read.
+  //!
+  //! @note For streaming configuration information sources, the
+  //!  @a set_name parameter should be set to "all"
+  void Read
+  ( in  HANDLE_TYPE          handle,
+    in  SET_NAME_TYPE        set_name,
+    in  SYSTEM_ADDRESS_TYPE  buffer,
+    in  BUFFER_SIZE_TYPE     buffer_size,
+    out BUFFER_SIZE_TYPE     bytes_read,
+    out RETURN_CODE_TYPE     return_code);
+
+  //! The @a Seek method is used to set the current position indicator
+  //! in the configuration session.
+  //!
+  //! @param[in] handle indicates the current session.
+  //! @param[in] whence indicates how to interpret the offset parameter.
+  //! @param[in] offset indicates the desired offset.
+  //! @param[out] return_code contains a status code indicating success
+  //!   or failure
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!   successful completion of the operation.
+  //! @return INVALID_PARAM is returned in @a return_code to indicate
+  //!   that the whence @a parameter is invalid, the offset is invalid
+  //!   for the specified value of @a whence, or that the 
+  //!   @a return_code pointer (in the appropriate languages) 
+  //!   is invalid.
+  //!
+  //! @note For some configuration media implementations, the @a Seek 
+  //!   operation may not be applicable.
+  void Seek
+  ( in HANDLE_TYPE    handle,
+   in WHENCE_TYPE    whence,
+   in OFFSET_TYPE    offset,
+   out RETURN_CODE_TYPE return_code); 
+
+  //! The Close method is used to conclude a sequence of operations
+  //! on a configuration handle. It frees any resources allocated
+  //! during open based on the specific configuration being accessed.
+  //!
+  //! @param[in] handle is the session to close
+  //! @param[out] return_code indicates success or failure
+  //!
+  //! @return NO_ERROR is returned in @a return_code to indicate
+  //!   successful completion of the operation.
+  //! @return INVALID_CONFIG is returned in @a return_code to indicate
+  //!   that the @a handle is invalid.
+  void Close
+  ( in HANDLE_TYPE       handle,
+   out RETURN_CODE_TYPE     return_code);
+
+ };
+};
+
+#endif //! FACE_CONFIGURATION

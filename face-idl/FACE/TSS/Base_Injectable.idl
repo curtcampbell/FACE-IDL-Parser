@@ -1,0 +1,20 @@
+//! Source file: FACE/TSS/Base_Injectable.idl
+
+#ifndef FACE_TSS_BASE_INJECTABLE
+#define FACE_TSS_BASE_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/Base.idl>
+
+module FACE {
+  module TSS {
+
+    //! Template module instantiation for Base Interface
+    module Injectable<
+        FACE::TSS::Base
+    > Base_Injectable;
+
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_BASE_INJECTABLE

@@ -1,0 +1,69 @@
+//! Source file: FACE/TSS/Typed.idl
+//! FACE Edition: 3.2
+
+#ifndef FACE_TSS_TYPED
+#define FACE_TSS_TYPED
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    //! Template provides the operations for a given data type
+    //! Unique modules are instantiated to accommodate UoCs in the same
+    //! memory space
+    module Typed<typename DATATYPE_TYPE> {
+    
+      //! The Read_Callback interface provides a callback prototype for 
+      //! PCS/PSSS UoCs and is used to support receiving data without the 
+      //! PCS/PSSS UoC having to poll for the data.  If a callback is used
+      //! it is registered using the Register_Callback
+      interface Read_Callback {        
+        void Callback_Handler (
+           in   CONNECTION_ID_TYPE  connection_id,
+           in   TRANSACTION_ID_TYPE transaction_id,
+           in   DATATYPE_TYPE       message,
+           in   HEADER_TYPE         header,
+           in   QoS_EVENT_TYPE      qos_parameters,
+           out  RETURN_CODE_TYPE    return_code);
+      };
+      
+      interface TypedTS {
+  
+        //! The purpose of Receive_Message (TS) is to provide a
+        //! mechanism to receive data from another source
+        void Receive_Message (
+           in    CONNECTION_ID_TYPE  connection_id,
+           in    TIMEOUT_TYPE        timeout,
+           out   TRANSACTION_ID_TYPE transaction_id,
+           inout DATATYPE_TYPE       message,
+           out   HEADER_TYPE         header,
+           out   QoS_EVENT_TYPE      qos_parameters,
+           out   RETURN_CODE_TYPE    return_code);
+        
+        //! The purpose of Send_Message (TS) is to provide a mechanism
+        //! to send data to a destination 
+        void Send_Message (
+          in    CONNECTION_ID_TYPE  connection_id,
+          in    TIMEOUT_TYPE        timeout,
+          inout TRANSACTION_ID_TYPE transaction_id,
+          in    DATATYPE_TYPE       message,
+          out   RETURN_CODE_TYPE    return_code);
+              
+        //! The purpose of Register_Callback(TS) is to provide a mechanism
+        //! to read data without polling.
+        void Register_Callback (
+          in     CONNECTION_ID_TYPE connection_id,
+          inout  Read_Callback      callback,
+          out    RETURN_CODE_TYPE   return_code);
+      
+        //! The purpose of Unregister_Callback(TS) is to unregister a
+        //! callback.
+        void Unregister_Callback (
+          in  CONNECTION_ID_TYPE connection_id,
+          out RETURN_CODE_TYPE   return_code);
+      };
+    };
+  };
+};
+
+#endif //! FACE_TSS_TYPED

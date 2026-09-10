@@ -1,0 +1,55 @@
+## typed_ts_standard.vtl
+## Generates one Standard TypedTS IDL for a QUEUING or SINGLE_INSTANCE connection.
+## Conforms to FACE Technical Standard 3.2 §4.8.4.1 req 3:
+##   module name: FACE::TSS::<UOP_MODEL_NAME>::<DATATYPE_TYPE>::TypedTS
+##   output path: FACE/TSS/<UOP_MODEL_NAME>/<DATATYPE_TYPE>/TypedTS.idl
+## where UOP_MODEL_NAME is the root UoPModel that DEFINES the datatype.
+## @foreach  uop_connection
+## @filename ${connTssModPath}/${msgName}/TypedTS.idl
+##
+## Context (from IdlGeneratorPipeline.uoPConnectionContext()):
+##   $conn                  — ConnectionData  (STANDARD variant only)
+##   $uopName / $connName   — String
+##   $connTssModuleOpeners  — List<String>  opens FACE::TSS::<MODEL> (3 levels)
+##   $connTssModuleClosers  — List<String>
+##   $connTssContentIndent  — String
+##   $connTssModPath        — "FACE/TSS/<MODEL>"
+##   $connTssGuardPrefix    — "FACE_TSS_<MODEL>"
+##   $connDmModPath         — "FACE/DM/<MODEL>"
+##   $connDmPrefix          — "::FACE::DM::<MODEL>::"
+##
+## The <DATATYPE_TYPE> module level comes from the instantiation statement below,
+## NOT from an extra module opener — see §4.8.4.1 and FACE/TSS/TypedTS.idl.
+##
+## EXTENDED connections are skipped via #stop; pipeline discards blank output.
+##
+#if ($conn.typedTsVariant.name() != "STANDARD")
+#stop
+#end
+#set ($msgName = $conn.messageType.name)
+#set ($guard   = "${connTssGuardPrefix}_${msgName.toUpperCase()}_TYPEDTS_IDL")
+//! Source file: ${connTssModPath}/${msgName}/TypedTS.idl
+//!
+//! Standard TypedTS instantiation: ${msgName}
+//! FACE Technical Standard 3.2, §4.8.4.1
+//! UoP: ${uopName}  Connection: ${connName}  Kind: ${conn.kind}  Role: ${conn.role}
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/TypedTS.idl>
+\#include <${connDmModPath}/${msgName}.idl>
+
+#foreach ($line in $connTssModuleOpeners)
+$line
+#end
+
+${connTssContentIndent}typedef ${connDmPrefix}${msgName}  ${msgName}_t;
+
+${connTssContentIndent}module ::FACE::TSS::Typed<${msgName}_t> ${msgName};
+
+#foreach ($line in $connTssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

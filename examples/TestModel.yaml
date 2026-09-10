@@ -1,0 +1,114 @@
+# ============================================================================
+# TestModel.yaml
+#
+# Minimal entity source file for exercising the generator end-to-end.
+# Two entities (Alpha, Beta) covering all template code paths:
+#   - supporting enum          (BetaStatus on Beta)
+#   - nested struct fields     (Position on both)
+#   - scalar fields of several IDL types
+#   - EntityTypeEnum: Alpha=1, Beta=2  (alphabetical assignment)
+# ============================================================================
+
+model_name:          TestModel
+idl_module:          FACE.DM.TestModel
+tss_idl_module:      FACE.TSS.TestModel
+cpp_namespace:       "FACE::DM::TestModel"
+struct_name_pattern: "{name}Entity"
+
+entities:
+
+  # --------------------------------------------------------------------------
+  # Alpha — simple entity with nested position and scalar fields
+  # --------------------------------------------------------------------------
+  - simple_name:    Alpha
+    qualified_path: FACE.DM.TestModel.Alpha
+    description:    "A minimal test entity with mixed field types."
+    includes:
+      - Position.idl
+
+    fields:
+      - name:                 alpha_id
+        idl_type:             "::FACE::GUID_TYPE"
+        attribute_value_type: AV_GUID
+        comment:              "Unique Alpha identifier"
+
+      - name:     position
+        idl_type: Position
+        nested:   true
+        comment:  "2-D screen position"
+        nested_fields:
+          - name:                 x
+            idl_type:             float
+            attribute_value_type: AV_FLOAT
+            comment:              "X coordinate"
+          - name:                 y
+            idl_type:             float
+            attribute_value_type: AV_FLOAT
+            comment:              "Y coordinate"
+
+      - name:                 label
+        idl_type:             "::FACE::STRING_TYPE"
+        attribute_value_type: AV_STRING
+        comment:              "Human-readable label"
+
+      - name:                 active
+        idl_type:             boolean
+        attribute_value_type: AV_BOOLEAN
+        comment:              "Entity is active"
+
+      - name:                 timestamp
+        idl_type:             "::FACE::SYSTEM_TIME_TYPE"
+        attribute_value_type: AV_SYSTEM_TIME
+        comment:              "Last update, nanoseconds since epoch"
+
+  # --------------------------------------------------------------------------
+  # Beta — entity with a supporting enum and integer field
+  # --------------------------------------------------------------------------
+  - simple_name:    Beta
+    qualified_path: FACE.DM.TestModel.Beta
+    description:    "A test entity with a supporting enum."
+    includes:
+      - Position.idl
+
+    supporting_enums:
+      - name:    BetaStatus
+        comment: "Operational status of a Beta entity."
+        values:
+          - name:    BETA_STATUS_UNKNOWN
+            comment: "0 — Status not yet determined"
+          - name:    BETA_STATUS_NOMINAL
+            comment: "1 — Operating within normal parameters"
+          - name:    BETA_STATUS_DEGRADED
+            comment: "2 — Reduced capability"
+          - name:    BETA_STATUS_OFFLINE
+            comment: "3 — Not operational"
+
+    fields:
+      - name:                 beta_id
+        idl_type:             "::FACE::GUID_TYPE"
+        attribute_value_type: AV_GUID
+        comment:              "Unique Beta identifier"
+
+      - name:     position
+        idl_type: Position
+        nested:   true
+        comment:  "2-D screen position"
+        nested_fields:
+          - name:                 x
+            idl_type:             float
+            attribute_value_type: AV_FLOAT
+            comment:              "X coordinate"
+          - name:                 y
+            idl_type:             float
+            attribute_value_type: AV_FLOAT
+            comment:              "Y coordinate"
+
+      - name:                 status
+        idl_type:             BetaStatus
+        attribute_value_type: AV_INT64
+        comment:              "Current operational status"
+
+      - name:                 count
+        idl_type:             "unsigned long"
+        attribute_value_type: AV_UINT32
+        comment:              "Event count"

@@ -1,0 +1,43 @@
+## macros.vm — Python language macro library
+## Loaded by Velocity before every Python template (macro_library: macros.vm in language.yaml).
+## Templates call these macros instead of the legacy $py.* helper methods.
+##
+## Convention: content-producing lines end with ## to suppress trailing newline so
+## that macros expand cleanly when called inline inside a template line.
+
+## ---------------------------------------------------------------------------
+## paramAnnotation($param) — "name: type"  (for function parameter lists)
+## ---------------------------------------------------------------------------
+#macro(paramAnnotation $param)${param.name}: $types.type($param.type)#end
+
+## ---------------------------------------------------------------------------
+## fieldDecl($type $name) — dataclass field declaration with appropriate default.
+##
+## Mapping:
+##   Sequence / Array    → name: List[T] = field(default_factory=list)
+##   Scoped class types  → name: T       = field(default_factory=T)
+##   float / bool / str  → name: T       = 0.0 / False / ''
+##   int and other imm.  → name: T       = 0
+##
+## Relies on immutable_types in language.yaml: [int, float, bool, str].
+## $types.isImmutable() returns true for Python primitive scalar types.
+## ---------------------------------------------------------------------------
+#macro(fieldDecl $type $name)
+#set($__tn = $type.class.simpleName)
+#set($__ts = $types.type($type))
+#if($__tn == "Sequence" || $__tn == "Array")
+${name}: ${__ts} = field(default_factory=list)##
+#elseif($types.isImmutable($type))
+#if($__ts == "float")
+${name}: ${__ts} = 0.0##
+#elseif($__ts == "bool")
+${name}: ${__ts} = False##
+#elseif($__ts == "str")
+${name}: ${__ts} = ''##
+#else
+${name}: ${__ts} = 0##
+#end
+#else
+${name}: ${__ts} = field(default_factory=${__ts})##
+#end
+#end

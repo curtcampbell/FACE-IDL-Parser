@@ -1,0 +1,40 @@
+## EntityCrudResponse.vtl
+## Generates EntityCrudResponse.idl — EntityCrudResponse struct.
+## Content is effectively static; module nesting and guard come from $model.
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_ENTITYCRUDRESPONSE_IDL")
+//! Source file: ${model.sourcePathFor("EntityCrudResponse.idl")}
+//!
+//! Reactor-to-client response on the ER_CRUD connection.
+//! On CRUD_READ, payload carries the full entity snapshot [ER-038].
+//! On CRUD_CREATE, entity_id carries the Reactor-assigned GUID [ER-036].
+//!
+//! Dependencies (via EntityPayload.idl):
+//!   EntityID_Type, EntityPayload
+//! Dependencies (via FACE/Common.idl):
+//!   ::FACE::RETURN_CODE_TYPE
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+\#include "EntityPayload.idl"
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! Reactor-to-client response on the ER_CRUD connection.
+${contentIndent}  struct EntityCrudResponse {
+${contentIndent}    ::FACE::RETURN_CODE_TYPE  return_code;  //! Operation result
+${contentIndent}    EntityID_Type             entity_id;    //! Assigned or echoed entity ID
+${contentIndent}    EntityPayload             payload;      //! Entity snapshot (meaningful on READ)
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

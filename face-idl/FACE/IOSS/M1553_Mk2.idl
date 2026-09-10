@@ -1,0 +1,177 @@
+//! Source file: FACE/IOSS/M1553_Mk2.idl
+
+#ifndef FACE_IOSS_M1553_MK2
+#define FACE_IOSS_M1553_MK2
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the MIL-STD-1553 I/O Service.
+    //! References in [] are to MIL-STD-1553B specification.
+    module M1553_Mk2 {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+  
+      //! COMMAND_WORD_KIND models command words used in [Figures 6 & 7]
+      enum COMMAND_WORD_KIND {
+        RECEIVE,     //! Receive Command, T/R is logical zero 
+	TRANSMIT,    //! Transmit Command, T/R is logical one
+	MODE,        //! Assign T/R and mode_code per Table 1
+	IGNORED      //! When not an RT-to-RT transfer
+      };
+
+      //! CommandWordData is the logical representation of bitfields
+      //! per [4.3.3.5.1]
+      struct CommandWordData {
+        COMMAND_WORD_KIND cw_kind;
+        octet rt_addr;      // remote Terminal Address (0-31)
+                            //   per [4.3.3.5.1.2]
+	octet subaddr;      // sub Address Number (0-31)
+                            //   per [4.3.3.5.1.4]
+	octet mode_code;    // 255 if not a mode command word, otherwise
+                            //   mode code value per [4.3.3.5.1.7]
+      };
+
+      //! StatusWordData is the logical representation of bitfields
+      //! per [4.3.3.5.3]
+      struct StatusWordData {
+        octet rt_addr;      	  // remote Terminal Address (0-31)
+				  //   per [4.3.3.5.3.2]
+	boolean message_error;	  // per [4.3.3.5.3.3]
+	boolean instrumentation;  // per [4.3.3.5.3.4]
+	boolean service_request;  // per [4.3.3.5.3.5]
+	octet reserved_bits;      // per [4.3.3.5.3.6]
+	boolean bcast_cmd_rcvd;	  // per [4.3.3.5.3.7]
+	boolean busy;             // per [4.3.3.5.3.8]
+	boolean subsystem_flag;	  // per [4.3.3.5.3.9]
+	boolean dynamic_bus_ctrl; // per [4.3.3.5.3.10]
+	boolean terminal_flag;    // per [4.3.3.5.3.11]
+      };
+
+      typedef unsigned short DATA_WORD_TYPE;
+      const octet MAX_DATA_WORD_COUNT = 32;
+      typedef sequence<DATA_WORD_TYPE, MAX_DATA_WORD_COUNT> DATA_WORDS;
+
+      //! ReadWriteBuffer covers each of the information transfer formats
+      //! in [Figure 6] as follows:
+      //! Controller to RT: cw1.cw_kind = RECEIVE; cw2.cw_kind = IGNORED
+      //! RT to Controller: cw1.cw_kind = TRANSMIT; cw2.cw_kind = IGNORED
+      //! RT to RT: cw1.cw_kind = RECEIVE; cw2.cw_kind = TRANSMIT
+      //! Mode Command without data: cw1.cw_kind = MODE; cw2.cw_kind = IGNORED
+      //! Mode Command data transmit: cw1.cw_kind = MODE; 
+      //!                             cw2.cw_kind = TRANSMIT
+      //! Mode Command data receive: cw1.cw_kind = MODE; cw2.cw_kind = RECEIVE
+      //!
+      //! ReadWriteBuffer covers each of the information transfer formats
+      //! in [Figure 7] for broadcast commands (cw1.rt_addr == 31) as follows:
+      //! Controller to RT(s): cw1.cw_kind = RECEIVE; cw2.cw_kind = IGNORED
+      //! RT to RT(s): cw1.cw_kind = RECEIVE; cw2.cw_kind = TRANSMIT
+      //! Mode Command without data: cw1.cw_kind = MODE; cw2.cw_kind = IGNORED
+      //! Mode Command with data: cw1.cw_kind = MODE; cw2.cw_kind = IGNORED
+      //!
+      //! Use bus_id to specify the data bus rather than default (0) to the 
+      //! primary and redundant bus(es).
+      struct ReadWriteBuffer {
+        octet bus_id;           // identify the MIL-STD-1553 bus
+                                //   (valid values: 1 - 15)
+	CommandWordData cw1;
+	StatusWordData sw1;
+		
+	CommandWordData cw2;    // Two command words and two status words for
+	StatusWordData sw2;     // RT-to-RT transmission per [3.11]
+
+        DATA_WORDS data;        // Use sequence length for data word count
+                                // per [4.3.3.5.1.5]
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! A dual-redundant implementation has a primary and a secondary
+      //! bus. The term "channel" does not appear the specification, but
+      //! is commonly used in product literature to refer to them together.
+
+      //! Connection configuration parameter when the device driver must
+      //! be assigned a role. May logically be reconfigured to effect 
+      //! transition from backup bus controller to bus controller. Values
+      //! are defined to allow multiple roles to be expressed
+      //! simultaneously.
+      typedef unsigned short CHANNEL_MODE_TYPE;
+      const CHANNEL_MODE_TYPE BC       = 0x0001; // Bus Controller
+      const CHANNEL_MODE_TYPE BBC      = 0x0002; // Backup Bus Controller
+      const CHANNEL_MODE_TYPE RT       = 0x0004; // Remote Terminal
+      const CHANNEL_MODE_TYPE BM       = 0x0008; // Bus Monitor
+      const CHANNEL_MODE_TYPE MULTI_RT = 0x0010; // Multi-Function Terminal
+      const IO_PARAMETER_ID_TYPE CHANNEL_MODE = 1; // FACE_USHORT
+
+      //! Connection configuration parameter for its terminal address.
+      //! Implementation-defined behavior if reconfigured during
+      //! operation.
+      const IO_PARAMETER_ID_TYPE TERMINAL_ADDRESS = 2; // FACE_OCTET
+
+      //! Connection configuration parameter for its terminal subaddress,
+      //! when applicable. Implementation-defined behavior if reconfigured
+      //! during operation.
+      const IO_PARAMETER_ID_TYPE TERMINAL_SUBADDRESS = 3; // FACE_OCTET
+
+      //! Bus configuration parameter for number of redundant buses
+      //! associated with the channel. May be queried via
+      //! Get_Bus_Configuration(I/O) if System Integrator determines
+      //! redundancy. May be set via Configure_Bus_Parameters(I/O) if
+      //! PSSS UoC interface user asserts redundancy.
+      const IO_PARAMETER_ID_TYPE CHANNEL_NUM_BUSES = 4; // FACE_OCTET
+
+      //! Release bus control state
+      //! const IO_PARAMETER_ID_TYPE RELEASE_BUS_CONTROL_STATE = 2;
+      //!                                               // FACE_BOOLEAN
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+
+      const BUS_STATUS_TYPE DRIVER_ERROR = 0xDEAD;
+
+      //! An I/O connection corresponds to a logical channel, a group of
+      //! 1553 redundant buses. The term "channel" does not appear the
+      //! specification, but is commonly used in product literature.
+      //! These declarations support reporting status for up to 4 redundant
+      //! buses for the same channel/connection.
+      //! Multiple simultaneous bus status conditions are supported.
+      //! The combination of four buses and five error conditions is more
+      //! than can be represented in a 16-bit BUS_STATUS_TYPE. Therefore,
+      //! a single call to Get_Bus_Status(I/O) cannot report status for
+      //! all buses. Subsequent calls are required to get status for each
+      //! bus. The returned value encodes which bus is reported.
+      const BUS_STATUS_TYPE BUS_A_REPORTED = 0x1000;
+      const BUS_STATUS_TYPE BUS_B_REPORTED = 0x2000;
+      const BUS_STATUS_TYPE BUS_C_REPORTED = 0x3000;
+      const BUS_STATUS_TYPE BUS_D_REPORTED = 0x4000;
+
+      //! Encompasses [4.3.3.6] message ordering and driver-specific
+      //! retries
+      const BUS_STATUS_TYPE REPORTED_BUS_SEQUENCING_ERROR = 0x0001;
+
+      //! Encompasses [4.3.3.7] and [4.3.3.8]
+      const BUS_STATUS_TYPE REPORTED_BUS_TIMING_ERROR = 0x0002;
+
+      //! Encompasses [4.3.3.9]
+      const BUS_STATUS_TYPE REPORTED_BUS_NO_RESPONSE = 0x0004;
+
+      //! Encompasses [4.4.1] and [4.4.2]
+      const BUS_STATUS_TYPE REPORTED_BUS_ENCODING_ERROR = 0x0008;
+
+      //! Encompasses [4.4.3.4]
+      const BUS_STATUS_TYPE REPORTED_BUS_ILLEGAL_CMD = 0x0010;
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<M1553_Mk2::ReadWriteBuffer> M1553_Mk2;
+  };
+};
+
+#endif //! FACE_IOSS_M1553_MK2

@@ -1,0 +1,84 @@
+// SampleModelTypedTS.idl
+//
+// Self-contained example of FACE template module instantiation.
+// Used by TemplateInstantiationIntegrationTest.
+//
+// This file declares a minimal Typed template inline (no external includes
+// needed) and instantiates it with a concrete data type, exercising:
+//
+//   1. TemplateInstantiator registry building
+//   2. Typedef chain resolution
+//   3. Type substitution throughout the template body
+//   4. CppTypeHelper.paramDeclFull (inout interface → I**, inout struct → T&)
+//   5. Python template_inst.py.vm rendering
+//
+// FACE TS 3.2 §4.14 conventions are used throughout.
+
+#pragma once
+
+module FACE {
+
+  // ----------------------------------------------------------------
+  // Minimal data model types (normally from Common.idl / DM layer)
+  // ----------------------------------------------------------------
+  module DM {
+    module SampleModel {
+
+      struct TrackData {
+        long   track_id;
+        double latitude;
+        double longitude;
+      };
+
+    }; // module SampleModel
+  }; // module DM
+
+  // ----------------------------------------------------------------
+  // Inline Typed template (normally from TypedTS.idl)
+  // Declares a Read_Callback interface and a TypedTS interface.
+  // ----------------------------------------------------------------
+  module TSS {
+
+    module Typed<typename DATATYPE_TYPE> {
+
+      interface Read_Callback {
+        void Callback_Handler(
+            in    long              connection_id,
+            in    long              transaction_id,
+            in    DATATYPE_TYPE     message,
+            inout long              return_code);
+      };
+
+      interface TypedTS {
+        void Receive_Message(
+            in    long              connection_id,
+            in    long              timeout,
+            inout long              transaction_id,
+            out   DATATYPE_TYPE     message,
+            inout Read_Callback     callback,
+            inout long              return_code);
+
+        void Send_Message(
+            in    long              connection_id,
+            in    long              timeout,
+            inout long              transaction_id,
+            in    DATATYPE_TYPE     message,
+            inout long              return_code);
+      };
+
+    }; // module Typed
+
+    module SampleModel {
+
+      // Typedef alias — the instantiator must resolve this through the chain
+      typedef ::FACE::DM::SampleModel::TrackData TrackData_t;
+
+      // Template instantiation:
+      // Bind Typed<DATATYPE_TYPE> where DATATYPE_TYPE → ::FACE::DM::SampleModel::TrackData
+      module ::FACE::TSS::Typed<TrackData_t> TrackDataTypedTS;
+
+    }; // module SampleModel
+
+  }; // module TSS
+
+}; // module FACE

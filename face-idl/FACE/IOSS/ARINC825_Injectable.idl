@@ -1,0 +1,22 @@
+//! Source file: FACE/IOSS/ARINC825_Injectable.idl
+
+#ifndef FACE_IOSS_ARINC825_INJECTABLE
+#define FACE_IOSS_ARINC825_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/ARINC825.idl>
+
+module FACE {
+  module IOSS {
+    module ARINC825 {
+
+      //! Template module instantiation for ARINC 825 I/O Service Interface
+      module Injectable<
+        FACE::IOSS::ARINC825::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module ARINC825
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_ARINC825_INJECTABLE

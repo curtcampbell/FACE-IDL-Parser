@@ -1,0 +1,23 @@
+//! Source file: FACE/IOSS/M1553_Injectable.idl
+
+#ifndef FACE_IOSS_M1553_INJECTABLE
+#define FACE_IOSS_M1553_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/M1553.idl>
+
+module FACE {
+  module IOSS {
+    module M1553 {
+
+      //! Template module instantiation for MIL-STD-1553 I/O Service
+      //! Interface
+      module Injectable<
+        FACE::IOSS::M1553::IO_Service
+      > IO_Service_Injectable;
+
+    };
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_M1553_INJECTABLE

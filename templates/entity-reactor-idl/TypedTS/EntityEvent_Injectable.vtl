@@ -1,0 +1,35 @@
+## EntityEvent_Injectable.vtl
+## Generates TypeTS/EntityEvent_Injectable.idl.
+## Instantiates FACE Injectable for the EntityEvent TypedTS.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_ENTITYEVENT_INJECTABLE_IDL")
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("EntityEvent_Injectable.idl")}
+//!
+//! TypedTS Injectable instantiation for EntityEvent.
+//! FACE Technical Standard Edition 3.2, §4.8.4.1
+//!
+//! Resulting qualified name:
+//!   ${tssPrefix}EntityEvent_Injectable::Injectable
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Injectable.idl>
+\#include "EntityEvent.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${tssPrefix}EntityEvent::TypedTS  EntityEvent_TypedTS_t;
+
+${tssContentIndent}  module ::FACE::Injectable<EntityEvent_TypedTS_t> EntityEvent_Injectable;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

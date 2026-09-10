@@ -1,0 +1,23 @@
+//! Source file: FACE/TSS/TPM_Injectable.idl
+
+#ifndef FACE_TSS_TPM_INJECTABLE
+#define FACE_TSS_TPM_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/TPM.idl>
+
+module FACE {
+  module TSS {
+    module TPM {
+
+      //! Template module instantiation for Transport Protocol Module
+      //! Interface
+      module Injectable<
+        FACE::TSS::TPM::TPMTS
+      > TPMTS_Injectable;
+
+    }; // module TPM
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_TPM_INJECTABLE

@@ -1,0 +1,205 @@
+name: C++
+output_subdirectory: cpp
+
+# ── Macro library ─────────────────────────────────────────────────────────────
+macro_library: macros.vm
+
+# ── Iteration strategy ────────────────────────────────────────────────────────
+iteration:
+  strategy: per_idl_file
+  # Output path derived from the IDL file's module chain, not its directory tree.
+  # One .hpp per IDL file at e.g. FACE/DM/SampleModel/TrackEntity.hpp.
+  path_from_namespace: true
+  path: "include/{modules}/{name}.hpp"
+  extension_replace:
+    ".idl": ".hpp"
+  # Compute $guardBase from namespace-mirrored path (FACE_DM_SAMPLEMODEL_TRACKENTITY etc.)
+  compute_guard: true
+  # Fall back to per_construct when there are no IDL file units (YAML model path).
+  fallback_to_per_construct: true
+
+# ── Template routing ──────────────────────────────────────────────────────────
+templates:
+  # Primary path: one header per IDL file
+  file:
+    template: file.hpp.vm
+  # Fallback path: one header per construct (YAML model path).
+  # These entries define their own path pattern (without the "include/" prefix
+  # used by the per_idl_file strategy) so the fallback produces files at
+  # {lang}/FACE/DM/SampleModel/Foo.hpp rather than {lang}/include/...
+  struct:
+    template: struct.hpp.vm
+    path: "{modules}/{name}.hpp"
+  enum:
+    template: enum.hpp.vm
+    path: "{modules}/{name}.hpp"
+  interface:
+    template: interface.hpp.vm
+    path: "{modules}/{name}.hpp"
+  template_inst:
+    template: template_inst.hpp.vm
+    path: "{modules}/{name}.hpp"
+  union:
+    template: union.hpp.vm
+    path: "{modules}/{name}.hpp"
+  const:
+    template: const.hpp.vm
+    path: "{modules}/{name}.hpp"
+  typedef:
+    template: typedef.hpp.vm
+    path: "{modules}/{name}.hpp" 
+
+# ── Type maps (used by TypeResolver / $types) ─────────────────────────────────
+# C++ uses FACE-namespace typedefs directly (FACE::Short, FACE::Long, etc.)
+# rather than C++ primitive types, per FACE TS 3.2 §4.14.8.7.1 Table 14.
+# The $cpp helper handles this through its own type() method; these maps
+# are provided for $types completeness.
+primitive_types:
+  SHORT: "FACE::Short"
+  LONG: "FACE::Long"
+  LONG_LONG: "FACE::LongLong"
+  UNSIGNED_SHORT: "FACE::UnsignedShort"
+  UNSIGNED_LONG: "FACE::UnsignedLong"
+  UNSIGNED_LONG_LONG: "FACE::UnsignedLongLong"
+  FLOAT: "FACE::Float"
+  DOUBLE: "FACE::Double"
+  LONG_DOUBLE: "FACE::LongDouble"
+  CHAR: "FACE::Char"
+  WIDE_CHAR: "FACE::WChar"
+  OCTET: "FACE::Octet"
+  INT8: "FACE::Octet"
+  UINT8: "FACE::Octet"
+  INT16: "FACE::Short"
+  UINT16: "FACE::UnsignedShort"
+  INT32: "FACE::Long"
+  UINT32: "FACE::UnsignedLong"
+  INT64: "FACE::LongLong"
+  UINT64: "FACE::UnsignedLongLong"
+  BOOLEAN: "FACE::Boolean"
+
+parameterized_types:
+  string: "FACE::String_Type"
+  wstring: "FACE::WString_Type"
+  sequence: "FACE::Sequence<{element}>"
+  sequence_include: "FACE/Sequence.hpp"
+  array: "{element}"
+
+scoped_overrides: {}
+
+immutable_types: []
+boxed_types: {}
+
+# ── Naming ────────────────────────────────────────────────────────────────────
+reserved_prefix: "FACE_"
+
+reserved_words:
+  - alignas
+  - alignof
+  - and
+  - and_eq
+  - asm
+  - auto
+  - bitand
+  - bitor
+  - bool
+  - break
+  - case
+  - catch
+  - char
+  - char8_t
+  - char16_t
+  - char32_t
+  - class
+  - compl
+  - concept
+  - const
+  - consteval
+  - constexpr
+  - constinit
+  - const_cast
+  - continue
+  - co_await
+  - co_return
+  - co_yield
+  - decltype
+  - default
+  - delete
+  - do
+  - double
+  - dynamic_cast
+  - else
+  - enum
+  - explicit
+  - export
+  - extern
+  - false
+  - float
+  - for
+  - friend
+  - goto
+  - if
+  - inline
+  - int
+  - long
+  - mutable
+  - namespace
+  - new
+  - noexcept
+  - not
+  - not_eq
+  - nullptr
+  - operator
+  - or
+  - or_eq
+  - private
+  - protected
+  - public
+  - register
+  - reinterpret_cast
+  - requires
+  - return
+  - short
+  - signed
+  - sizeof
+  - static
+  - static_assert
+  - static_cast
+  - struct
+  - switch
+  - template
+  - this
+  - thread_local
+  - throw
+  - true
+  - try
+  - typedef
+  - typeid
+  - typename
+  - union
+  - unsigned
+  - using
+  - virtual
+  - void
+  - volatile
+  - wchar_t
+  - while
+  - xor
+  - xor_eq
+
+# ── Include computation ────────────────────────────────────────────────────────
+include_computation:
+  # Headers always added for every template_inst construct
+  template_inst_always_include:
+    - "FACE/TSS/Common.hpp"
+  # Skip FACE:: namespace types when computing struct field includes.
+  # FACE types are covered by the unconditional #include <FACE/Common.hpp>.
+  skip_prefixes:
+    - "::FACE::"
+    - "FACE::"
+  # Narrower skip set for template_inst resolved-actual includes.
+  # FACE::DM:: types DO need explicit includes; only skip TSS and Common headers.
+  template_inst_skip_prefixes:
+    - "::FACE::TSS"
+    - "FACE::TSS"
+    - "::FACE::Common"
+    - "FACE::Common"

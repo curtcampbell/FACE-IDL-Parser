@@ -1,0 +1,13 @@
+## const.py.vm
+## Generates one Python module for an IDL const declaration.
+## Emitted as a module-level typed constant using PEP 526 variable annotation.
+##
+## Context:
+##   $constNode   — ConstNode
+##   $moduleStack — List<String>
+##   $types       — TypeResolver
+##
+from __future__ import annotations
+
+#! IDL const ${constNode.name}
+${constNode.name}: $types.type($constNode.type) = ${constNode.value}

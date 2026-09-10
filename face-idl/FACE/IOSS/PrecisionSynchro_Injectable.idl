@@ -1,0 +1,23 @@
+//! Source file: FACE/IOSS/PrecisionSynchro_Injectable.idl
+
+#ifndef FACE_IOSS_PRECISIONSYNCHRO_INJECTABLE
+#define FACE_IOSS_PRECISIONSYNCHRO_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/PrecisionSynchro.idl>
+
+module FACE {
+  module IOSS {
+    module PrecisionSynchro {
+
+      //! Template module instantiation for Precision Synchro
+      //! I/O Service Interface
+      module Injectable<
+        FACE::IOSS::PrecisionSynchro::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module PrecisionSynchro
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_PRECISIONSYNCHRO_INJECTABLE

@@ -1,0 +1,53 @@
+//! Source file: FACE/IOSS/Analog.idl
+
+#ifndef FACE_IOSS_ANALOG
+#define FACE_IOSS_ANALOG
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the Analog I/O Service.
+    module Analog {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      struct ReadWriteBuffer {
+        long data;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! Minimum value
+      const IO_PARAMETER_ID_TYPE MIN_VALUE = 0; // FACE_LONG
+      //! Maximum value
+      const IO_PARAMETER_ID_TYPE MAX_VALUE = 1; // FACE_LONG
+      //! Initial value
+      const IO_PARAMETER_ID_TYPE INIT_VALUE = 2; // FACE_LONG
+      //! Data buffer precision - value type: long double
+      const IO_PARAMETER_ID_TYPE PRECISION = 3; // FACE_DOUBLE
+      //! Direction - FALSE = in; TRUE = out
+      const IO_PARAMETER_ID_TYPE DIRECTION = 4; // FACE_BOOLEAN
+      //! Voltage gain
+      const IO_PARAMETER_ID_TYPE GAIN = 5; // FACE_LONGDOUBLE
+      //! Voltage offset
+      const IO_PARAMETER_ID_TYPE OFFSET = 6; // FACE_LONGDOUBLE
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      //!
+      //! Note there are no defined bus status types for the Analog
+      //! I/O Service.
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<Analog::ReadWriteBuffer> Analog;
+  };
+};
+
+#endif //! FACE_IOSS_ANALOG

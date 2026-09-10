@@ -1,0 +1,22 @@
+//! Source file: FACE/IOSS/Synchro_Injectable.idl
+
+#ifndef FACE_IOSS_SYNCHRO_INJECTABLE
+#define FACE_IOSS_SYNCHRO_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/Synchro.idl>
+
+module FACE {
+  module IOSS {
+    module Synchro {
+
+      //! Template module instantiation for Synchro I/O Service Interface
+      module Injectable<
+        FACE::IOSS::Synchro::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module Synchro
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_SYNCHRO_INJECTABLE

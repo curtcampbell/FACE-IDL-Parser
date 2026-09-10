@@ -1,0 +1,174 @@
+//! Source file: FACE/IOSS/ARINC825.idl
+
+#ifndef FACE_IOSS_ARINC825
+#define FACE_IOSS_ARINC825
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the ARINC 825 I/O Service. It provides a
+    //! portable abstraction of a CAN controller interface to a PSSS UoC.
+    //! Basic support for Classical CAN and CAN FD is included. All section
+    //! references are based on ARINC 825-4.
+
+    module ARINC825 {
+
+      //! A PSSS UoC may need to participate in intra-system, inter-system,
+      //! and inter-network communications (Section 2.7). Therefore, an
+      //! appropriate analogy for an ARINC 825 I/O connection is a named
+      //! association to an CAN node. A PSSS UoC instance can communicate
+      //! across multiple CAN buses via distinct CAN nodes by opening
+      //! multiple I/O connections via Open(I/O). This analogy provides the
+      //! PSSS UoC significant flexibility to compose Data Frames in order
+      //! to achieve required behavior and performance.
+
+      //! Read(I/O) and Write(I/O) are viewed to be frame-based, meaning
+      //! the payload is intended to represent a Data Frame
+      //! (Section 4.2.1). The following declarations lead to an
+      //! abstraction of a Data Frame appropriate for a PSSS UoC.
+
+      //! CAN Identifier (Section 5.2) is a 29-bit structure, supported
+      //! here as an unsigned 32-bit integer. The PSSS UoC is responsible
+      //! for assigning bit values in accordance with ARINC 825 in order
+      //! to achieve its desired communication behavior. Exposing the
+      //! CAN Identifier increases flexibility for the PSSS UoC but may
+      //! consequentially decrease portability to other system deployments.
+      typedef unsigned long CAN_IDENTIFIER_TYPE;
+
+      //! Buffer for Data Field. The buffer length corresponds to DLC in
+      //! Control Field. The Classical CAN Extended Data Frame
+      //! (Section 4.2.1.1) can carry up to 8 bytes, while the CAN FD
+      //! Extended Data Frame (Section 4.2.1.2) can carry up to 64 bytes.
+      //! The buffer is therefore bound to the larger of the two.
+      //! ARINC 825 Write(I/O) returns INVALID_PARAM when framing a
+      //! Classical CAN Extended Data Frame if the buffer is longer than
+      //! 8 bytes.
+      const octet CAN_MAX_DLC = 8;
+      const octet CAN_FD_MAX_DLC = 64;
+      typedef sequence<octet,CAN_FD_MAX_DLC> CAN_BUFFER_TYPE;
+
+      struct DataFrameAbstraction {
+        //! Maps to Base Identifier and Identifier Extension of
+        //! Arbitration Field.
+        //! ARINC 825 Write(I/O) encodes CAN Identifier to Arbitration
+        //! Field. ARINC 825 Read(I/O) decodes CAN Identifier from
+        //! Arbitration Field.
+        CAN_IDENTIFIER_TYPE id;
+
+        //! SRR and IDE bits of Arbitration Field are assigned by
+        //! ARINC 825, and hence are not part of the Data Frame
+        //! abstraction. ARINC 825 Write(I/O) encodes SRR and IDE bits.
+
+        //! Control Field is not part of the Data Frame abstraction.
+        //! RTR bit is assigned by ARINC 825. FDF bit is determined by
+        //! the CAN node characteristics, and thus is associated with the
+        //! I/O connection. R0 bit is assigned by ARINC 825. DLC is related
+        //! to FDF and to Data Field, and thus is derived.
+        //! ARINC 825 Write(I/O) encodes Control Field.
+
+        //! Maps to Data Field and to DLC of Control Field.
+        CAN_BUFFER_TYPE buffer;
+
+        //! CRC Field is not part of the Data Frame abstraction.
+        //! ARINC 825 Write(I/O) encodes CRC Field based on FDF.
+        //! ARINC 825 Read(I/O) decodes CRC Field based on FDF and triggers
+        //! a DEGRADED CONNECTION_STATUS_CHANGE_EVENT on CRC error.
+
+        //! ACK Field is not part of the Data Frame abstraction. ACK
+        //! errors are handled as a fault type.
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each IO_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding IO_PARAMETER_VALUE_TYPE.
+      
+      //! Corresponds to FDF in Control Field. This value is assigned by
+      //! ARINC 825 Open(I/O) based on the named connection. The PSSS UoC
+      //! may assume its named connection is Classical CAN or CAN FD, so
+      //! it can query the open connection to confirm.
+      //! FDF cannot be changed on an open connection, so ARINC 825
+      //! Configure_Connection_Parameters(I/O) returns INVALID_PARAM if
+      //! QUERY_FDF is part of the parameter set.
+      const IO_PARAMETER_ID_TYPE QUERY_FDF = 0; // FACE_BOOLEAN
+
+      //! Bit rate is a CAN bus characteristic determined at the physical
+      //! layer based on the CAN bus architecture. It is not configurable
+      //! but may be queried by the PSSS UoC. These declarations support
+      //! ARINC 825 Get_Bus_Configuration(I/O). Bit rate cannot be changed
+      //! dynamically, so ARINC 825 Configure_Bus_Parameters(I/O) returns
+      //! INVALID_PARAM if QUERY_BIT_RATE is part of the parameter set.
+      typedef octet CAN_BIT_RATE;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_83_KBPS  = 0;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_125_KBPS = 1;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_250_KBPS = 2;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_500_KBPS = 3;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_1_MBPS   = 4;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_2_MBPS   = 5;
+      const CAN_BIT_RATE MAX_CAN_BIT_RATE_4_MBPS   = 6;
+      const IO_PARAMETER_ID_TYPE QUERY_BIT_RATE = 1; // FACE_OCTET
+
+      //! Fault types (Section 4.5.1). These faults are detected by a CAN
+      //! controller, so different CAN nodes can report different fault
+      //! conditions. Since these are not CAN bus fault conditions, they
+      //! must be reportable to the PSSS UoC per I/O connection. And, since
+      //! Get_Connection_Status(I/O) cannot return a fault code these
+      //! declarations support ARINC 825 Get_Connection_Configuration(I/O).
+      //! ARINC 825 Read(I/O) triggers DEGRADED
+      //! CONNECTION_STATUS_CHANGE_EVENT on these fault conditions, and the
+      //! PSSS UoC can query for fault conditions in the event handler.
+      //! Fault condition cannot be assigned, so ARINC 825
+      //! Configure_Connection_Parameters(I/O) returns INVALID_PARAM if
+      //! QUERY_CAN_FAULT is part of the parameter set.
+      typedef octet CAN_FAULT_TYPE;
+      const CAN_FAULT_TYPE CAN_FAULT_NONE = 0;
+      const CAN_FAULT_TYPE CAN_FAULT_BIT_ERROR = 1;
+      const CAN_FAULT_TYPE CAN_FAULT_BIT_STUFFING = 2;
+      const CAN_FAULT_TYPE CAN_FAULT_CRC_ERROR = 3;
+      const CAN_FAULT_TYPE CAN_FAULT_FORM_ERROR = 4;
+      const CAN_FAULT_TYPE CAN_FAULT_ACK_ERROR = 5;
+      const IO_PARAMETER_ID_TYPE QUERY_CAN_FAULT = 2; // FACE_OCTET
+
+      //! CAN node state machine (Section 4.6). Different CAN nodes can
+      //! report different states. Since these are not CAN bus states, they
+      //! must be reportable to the PSSS UoC per I/O connection. And, since
+      //! Get_Connection_Status(I/O) cannot return a state value these
+      //! declarations support ARINC 825 Get_Connection_Configuration(I/O).
+      //! The ARINC 825 I/O Service triggers CONNECTION_STATUS_CHANGE_EVENT
+      //! when the CAN node of an open I/O connection transitions state,
+      //! and the PSSS UoC can query state in the event handler.
+      //! The ARINC 825 I/O Service triggers NOT_OPEN when the CAN node of
+      //! an open I/O connection transitions from CAN_NODE_STATE_BUS_OFF to
+      //! CAN_NODE_STATE_INIT.
+      //! The ARINC 825 I/O Service triggers READY when the CAN node of an
+      //! open I/O connection transitions from CAN_NODE_STATE_INIT to
+      //! CAN_NODE_STATE_NORMAL.
+      //! The ARINC 825 I/O Service triggers DEGRADED when the CAN node of
+      //! an open I/O connection transitions from CAN_NODE_STATE_NORMAL to
+      //! CAN_NODE_STATE_BUS_OFF.
+      typedef octet CAN_NODE_STATE_TYPE;
+      const CAN_NODE_STATE_TYPE CAN_NODE_STATE_INIT    = 0;
+      const CAN_NODE_STATE_TYPE CAN_NODE_STATE_NORMAL  = 1;
+      const CAN_NODE_STATE_TYPE CAN_NODE_STATE_BUS_OFF = 2;
+      const IO_PARAMETER_ID_TYPE QUERY_CAN_NODE_STATE = 3; // FACE_OCTET
+
+      //! The PSSS UoC uses ARINC 825 Configure_Connection_Parameters(I/O)
+      //! with CAN_NODE_RESET as the sole element of the parameter set to
+      //! command the CAN node to transition from CAN_NODE_STATE_BUS_OFF to
+      //! CAN_NODE_STATE_INIT. The CAN node reset cannot be queried, so
+      //! ARINC 825 Get_Connection_Parameters(I/O) returns INVALID_PARAM if
+      //! CAN_NODE_RESET is part of the parameter set.
+      const IO_PARAMETER_ID_TYPE CAN_NODE_RESET = 4; // FACE_OCTET
+      
+    }; // module ARINC825
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<ARINC825::DataFrameAbstraction> ARINC825;
+
+ }; // module IOSS
+}; // module FACE
+
+#endif // FACE_IOSS_ARINC825

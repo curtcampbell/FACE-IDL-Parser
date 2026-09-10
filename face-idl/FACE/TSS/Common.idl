@@ -1,0 +1,71 @@
+//! Source file: FACE/TSS/Common.idl
+
+#ifndef FACE_TSS_COMMON
+#define FACE_TSS_COMMON
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module TSS {
+    //! String containing the connection name used in the TSS
+    //! create_connection function.
+    typedef STRING_TYPE CONNECTION_NAME_TYPE;
+
+    //! Length of the TS Message.
+    typedef unsigned long MESSAGE_SIZE_TYPE;
+
+    //! Link to the Data Model Type Information.
+    typedef GUID_TYPE MESSAGE_GUID_TYPE;
+
+    //!  UID Type is scoped to be unique within a system rather than global
+    typedef long long UID_TYPE;
+
+    //! Unique identifier for a TSS connection obtained in
+    //! create_connection but used in other TSS functions.
+    typedef UID_TYPE CONNECTION_ID_TYPE;
+
+    //! Used to tie together request/reply messages.
+    typedef UID_TYPE TRANSACTION_ID_TYPE;
+
+    //! Constant used to indicate message GUID is provided by the callee of a function.
+    const GUID_TYPE CALLEE_PROVIDES_GUID = 0;
+
+    //! Constant used to set transaction_id for publisher/subscriber connections.
+    const TRANSACTION_ID_TYPE TID_NOT_APPLICABLE = -1;
+
+    //! Constant used to set transaction_id when client calls send in client/server connections.
+    const TRANSACTION_ID_TYPE CALLEE_PROVIDES_TID = 0;
+
+    
+    //QoS Key, Value struct
+    struct QoS_Element{
+      STRING_TYPE keyname;
+      STRING_TYPE value; 
+    };
+    
+    typedef sequence<QoS_Element> QoS_EVENT_TYPE;    
+    
+    // "contains instance UID, source UID, and timestamp"
+    struct HEADER_TYPE {
+      UID_TYPE        instance_uid;
+      UID_TYPE        source_uid;
+      SYSTEM_TIME_TYPE timestamp;
+    };
+    
+    //! This type is used to represent a size in bytes.
+    typedef unsigned long BYTE_SIZE_TYPE;
+
+    //! This type is used to represent a raw data buffer. 
+    struct DATA_BUFFER_TYPE {
+      SYSTEM_ADDRESS_TYPE buffer_address;
+      BYTE_SIZE_TYPE buffer_capacity;
+    };
+    struct MESSAGE_TYPE {
+      MESSAGE_GUID_TYPE message_guid;
+      DATA_BUFFER_TYPE  buffer;
+    };
+  
+  };
+};
+
+#endif //! FACE_TSS_COMMON

@@ -1,0 +1,22 @@
+//! Source file: FACE/LCM/Configurable_Injectable.idl
+
+#ifndef FACE_CONFIGURABLE_INJECTABLE
+#define FACE_CONFIGURABLE_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/LCM/Configurable.idl>
+
+module FACE {
+  module LCM {
+    module Configurable {
+
+      //! Template module instantiation for Configurable Interface
+      module Injectable<
+        FACE::LCM::Configurable::ConfigurableInstance
+      > ConfigurableInstance_Injectable;
+
+    }; // module Configurable
+  }; // module LCM
+}; // module FACE
+
+#endif //! FACE_CONFIGURABLE_INJECTABLE

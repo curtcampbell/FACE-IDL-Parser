@@ -1,0 +1,32 @@
+//! Source file: FACE/LCM/Configurable.idl
+
+#ifndef FACE_LCM_CONFIGURABLE
+#define FACE_LCM_CONFIGURABLE
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module LCM {
+
+  //! FACE does not define an interface to create or destroy instances. The
+  //! IDL language bindings address the syntax for those operations. The
+  //! LCM Interface assumes an existent software object that implements
+  //! one or more of the interfaces defined.
+
+  //! The Configurable module corresponds to the Configurable Capability.
+    module Configurable {
+      interface ConfigurableInstance {
+
+        //! The Configure(LCM::Configurable) operation is called to provide
+        //! the instance with configuration parameters at the corresponding
+        //! execution point in its life-cycle.
+        void Configure(
+          in CONFIGURATION_RESOURCE     configuration,
+          out RETURN_CODE_TYPE          return_code);
+
+      }; // interface ConfigurableInstance
+    }; // module Configurable
+  };
+};
+
+#endif //! FACE_LCM_CONFIGURABLE

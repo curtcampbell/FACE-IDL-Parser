@@ -1,0 +1,40 @@
+## EntityCrudRequest_EntityCrudResponse.vtl
+## Generates TypeTS/EntityCrudRequest_EntityCrudResponse.idl.
+## Instantiates FACE Extended TypedTS for the CRUD request/response pair.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_ENTITYCRUDREQUEST_ENTITYCRUDRESPONSE_IDL")
+#set ($dmPrefix = $model.idlQualifiedPrefix)
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("EntityCrudRequest_EntityCrudResponse.idl")}
+//!
+//! Extended TypedTS instantiation for the EntityCrudRequest/EntityCrudResponse pair.
+//! FACE Technical Standard Edition 3.2, §4.8.4.2
+//!
+//! Resulting qualified names:
+//!   ${tssPrefix}EntityCrudRequest_EntityCrudResponse::Read_Callback
+//!   ${tssPrefix}EntityCrudRequest_EntityCrudResponse::TypedTS
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/Extended.idl>
+\#include "../EntityReactor/EntityCrudRequest.idl"
+\#include "../EntityReactor/EntityCrudResponse.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${dmPrefix}EntityCrudRequest   EntityCrudRequest_t;
+${tssContentIndent}  typedef ${dmPrefix}EntityCrudResponse  EntityCrudResponse_t;
+
+${tssContentIndent}  module ::FACE::TSS::Typed<EntityCrudRequest_t, EntityCrudResponse_t>
+${tssContentIndent}      EntityCrudRequest_EntityCrudResponse;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

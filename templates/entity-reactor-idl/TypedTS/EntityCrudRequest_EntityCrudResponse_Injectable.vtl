@@ -1,0 +1,37 @@
+## EntityCrudRequest_EntityCrudResponse_Injectable.vtl
+## Generates TypeTS/EntityCrudRequest_EntityCrudResponse_Injectable.idl.
+## Instantiates FACE Injectable for the CRUD TypedTS pair.
+##
+## Context: $model, $tssModuleOpeners, $tssModuleClosers, $tssContentIndent
+##
+#set ($guard = "${model.tssIdlModuleGuardPrefix}_ENTITYCRUDREQUEST_ENTITYCRUDRESPONSE_INJECTABLE_IDL")
+#set ($tssPrefix = $model.tssIdlQualifiedPrefix)
+//! Source file: ${model.tssSourcePathFor("EntityCrudRequest_EntityCrudResponse_Injectable.idl")}
+//!
+//! Extended TypedTS Injectable instantiation for the EntityCrudRequest/EntityCrudResponse pair.
+//! FACE Technical Standard Edition 3.2, §4.8.4.2
+//!
+//! Resulting qualified name:
+//!   ${tssPrefix}EntityCrudRequest_EntityCrudResponse_Injectable::Injectable
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Injectable.idl>
+\#include "EntityCrudRequest_EntityCrudResponse.idl"
+
+#foreach ($line in $tssModuleOpeners)
+$line
+#end
+
+${tssContentIndent}  typedef ${tssPrefix}EntityCrudRequest_EntityCrudResponse::TypedTS
+${tssContentIndent}      EntityCrudRequest_EntityCrudResponse_TypedTS_t;
+
+${tssContentIndent}  module ::FACE::Injectable<EntityCrudRequest_EntityCrudResponse_TypedTS_t>
+${tssContentIndent}      EntityCrudRequest_EntityCrudResponse_Injectable;
+
+#foreach ($line in $tssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

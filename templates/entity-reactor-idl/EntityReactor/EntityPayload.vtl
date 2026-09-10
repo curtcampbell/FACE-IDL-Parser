@@ -1,0 +1,69 @@
+## EntityPayload.vtl
+## Generates EntityPayload.idl — the data-model-driven file containing:
+##   - EntityTypeEnum   (ENTITY_TYPE_UNKNOWN sentinel + one entry per entity [ER-068..071])
+##   - EntityPayload    (discriminated union, one case per entity [ER-072..074])
+##   - EntityID_Type    (typedef ::FACE::GUID_TYPE)
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_ENTITYPAYLOAD_IDL")
+//! Source file: ${model.sourcePathFor("EntityPayload.idl")}
+//!
+//! Origin: ER IDL Generator — Stage 1 output.
+//!         DO NOT EDIT MANUALLY. In a production build this file is generated
+//!         by the ER IDL Generator from the project entity source (ERS Section 7.2).
+//!
+//! Entity struct IDL files included alphabetically by Platform Entity simple name,
+//! matching the EntityTypeEnum assignment order [ER-071].
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+#foreach ($entity in $model.entities)
+#set ($sn = $model.structNameFor($entity.simpleName))
+\#include "Entities/${sn}.idl"
+#end
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  // =========================================================================
+${contentIndent}  // DATA MODEL DRIVEN TYPES
+${contentIndent}  // Generated from Platform Entity enumeration [ER-068 -- ER-074]
+${contentIndent}  // =========================================================================
+
+${contentIndent}  //! Discriminant for the EntityPayload union.
+${contentIndent}  //! One enumerator per Platform Entity designated from the entity source.
+${contentIndent}  //! ENTITY_TYPE_UNKNOWN = 0 is reserved and SHALL NOT correspond to any
+${contentIndent}  //! Platform Entity [ER-070].
+${contentIndent}  //! Values assigned alphabetically by Platform Entity simple name [ER-071].
+${contentIndent}  enum EntityTypeEnum {
+${contentIndent}    ENTITY_TYPE_UNKNOWN,    //! 0 — Reserved sentinel; never registered.
+#foreach ($entity in $model.entities)
+${contentIndent}    ${entity.enumLabel}#if ($foreach.hasNext),#end     //! ${entity.typeEnumValue} — ${entity.qualifiedPath} -> ${model.structNameFor($entity.simpleName)}
+#end
+${contentIndent}  };
+
+${contentIndent}  //! Carries one instance of any designated entity type.
+${contentIndent}  //! Discriminated by EntityTypeEnum [ER-072].
+${contentIndent}  //! Struct member names are the lower-case Platform Entity simple name [ER-074].
+${contentIndent}  //! Struct type names are derived via struct_name_pattern ${model.structNamePattern} [ER-073].
+${contentIndent}  union EntityPayload switch (EntityTypeEnum) {
+#foreach ($entity in $model.entities)
+#set ($sn = $model.structNameFor($entity.simpleName))
+${contentIndent}    case ${entity.enumLabel}:  ${sn}  ${entity.unionMemberName};
+#end
+${contentIndent}  };
+
+${contentIndent}  //! Opaque identity for a managed entity instance.
+${contentIndent}  //! Assigned by the Reactor on CRUD_CREATE [ER-036].
+${contentIndent}  //! Shared by EntityEvent, EntityCrudRequest, and EntityCrudResponse.
+${contentIndent}  typedef ::FACE::GUID_TYPE EntityID_Type;
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

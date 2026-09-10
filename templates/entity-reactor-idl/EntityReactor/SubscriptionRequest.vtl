@@ -1,0 +1,99 @@
+## SubscriptionRequest.vtl
+## Generates SubscriptionRequest.idl — typed query subscription message.
+## Content is effectively static; module nesting and guard come from $model.
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_SUBSCRIPTIONREQUEST_IDL")
+//! Source file: ${model.sourcePathFor("SubscriptionRequest.idl")}
+//!
+//! Client-to-Reactor message on the ER_SUBSCRIPTION connection.
+//! Registers a filtered entity subscription and specifies how notifications
+//! are to be delivered.
+//!
+//! Supporting types defined here:
+//!   AttributeValueType  — type tag for the AttributeValue discriminant
+//!   AttributeValue      — typed RHS value for subscription query conditions
+//!   NotificationType    — bitmask selecting event categories (NOTIFY_*)
+//!   NotificationMode    — ON_CHANGE vs. PERIODIC dispatch policy
+//!   MAX_CONDITIONS      — upper bound on query condition strings
+//!   MAX_VALUES          — upper bound on $N reference values
+//!
+//! Dependencies (via EntityPayload.idl):
+//!   EntityTypeEnum
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+\#include "EntityPayload.idl"
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! Type tag for the AttributeValue union discriminant.
+${contentIndent}  //! Mapping from IDL types is defined in ERS Appendix D.
+${contentIndent}  enum AttributeValueType {
+${contentIndent}    AV_BOOLEAN,       //! IDL: boolean
+${contentIndent}    AV_INT64,         //! IDL: short, long, long long, enum
+${contentIndent}    AV_UINT64,        //! IDL: unsigned short, unsigned long, unsigned long long
+${contentIndent}    AV_FLOAT,         //! IDL: float
+${contentIndent}    AV_DOUBLE,        //! IDL: double
+${contentIndent}    AV_STRING,        //! IDL: string / FACE::STRING_TYPE
+${contentIndent}    AV_GUID,          //! IDL: FACE::GUID_TYPE
+${contentIndent}    AV_SYSTEM_TIME    //! IDL: FACE::SYSTEM_TIME_TYPE
+${contentIndent}  };
+
+${contentIndent}  //! Carries a typed value as the RHS of a subscription query condition,
+${contentIndent}  //! or as a field value extracted by a FieldAccessor functor [ER-084].
+${contentIndent}  union AttributeValue switch (AttributeValueType) {
+${contentIndent}    case AV_BOOLEAN:      boolean                   bool_val;
+${contentIndent}    case AV_INT64:        long long                 int_val;
+${contentIndent}    case AV_UINT64:       unsigned long long        uint_val;
+${contentIndent}    case AV_FLOAT:        float                     float_val;
+${contentIndent}    case AV_DOUBLE:       double                    double_val;
+${contentIndent}    case AV_STRING:       ::FACE::STRING_TYPE       string_val;
+${contentIndent}    case AV_GUID:         ::FACE::GUID_TYPE         guid_val;
+${contentIndent}    case AV_SYSTEM_TIME:  ::FACE::SYSTEM_TIME_TYPE  time_val;
+${contentIndent}  };
+
+${contentIndent}  //! Bitmask selecting which lifecycle event categories trigger a notification.
+${contentIndent}  //! Clients combine values with bitwise OR.
+${contentIndent}  typedef unsigned long NotificationType;
+${contentIndent}  const NotificationType NOTIFY_CREATED  = 0x01;  //! Notify on entity CREATE
+${contentIndent}  const NotificationType NOTIFY_UPDATED  = 0x02;  //! Notify on entity UPDATE
+${contentIndent}  const NotificationType NOTIFY_DELETED  = 0x04;  //! Notify on entity DELETE
+${contentIndent}  const NotificationType NOTIFY_EXPIRED  = 0x08;  //! Notify on entity expiration
+${contentIndent}  const NotificationType NOTIFY_ALL      = 0x0F;  //! Notify on all event types
+
+${contentIndent}  //! Selects whether notifications are dispatched immediately on change
+${contentIndent}  //! or batched at a fixed period [ERS 6.8.4].
+${contentIndent}  enum NotificationMode {
+${contentIndent}    ON_CHANGE,  //! Dispatch immediately on each entity state change.
+${contentIndent}    PERIODIC    //! Batch and dispatch at the configured period interval.
+${contentIndent}  };
+
+${contentIndent}  //! Maximum number of query condition strings per subscription.
+${contentIndent}  const unsigned long MAX_CONDITIONS = 16;
+
+${contentIndent}  //! Maximum number of $N reference values per subscription.
+${contentIndent}  const unsigned long MAX_VALUES = 16;
+
+${contentIndent}  //! Client-to-Reactor message on the ER_SUBSCRIPTION connection.
+${contentIndent}  //! conditions are query strings in the form "<LHS> <op> <RHS>" [ERS 6.4].
+${contentIndent}  //! All conditions are AND-combined [ER-022].
+${contentIndent}  struct SubscriptionRequest {
+${contentIndent}    EntityTypeEnum                                   entity_type;        //! Entity type to subscribe to
+${contentIndent}    sequence<::FACE::STRING_TYPE, MAX_CONDITIONS>    conditions;         //! Query strings (AND-combined)
+${contentIndent}    sequence<AttributeValue, MAX_VALUES>             values;             //! $N reference values
+${contentIndent}    NotificationType                                 notification_type;  //! Bitmask of NOTIFY_* constants
+${contentIndent}    NotificationMode                                 notification_mode;  //! ON_CHANGE or PERIODIC
+${contentIndent}    ::FACE::TIMEOUT_TYPE                             period;             //! Period in ns; used if PERIODIC
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

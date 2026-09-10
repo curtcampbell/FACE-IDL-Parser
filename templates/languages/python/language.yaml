@@ -1,0 +1,154 @@
+name: Python
+output_subdirectory: python
+
+# ── Macro library ─────────────────────────────────────────────────────────────
+macro_library: macros.vm
+
+# ── Iteration strategy ────────────────────────────────────────────────────────
+iteration:
+  strategy: per_construct
+  # Module segments preserve case (FACE/DM/SampleModel); one .py per public type.
+  path: "{modules}/{name}.py"
+
+# ── Template routing ──────────────────────────────────────────────────────────
+templates:
+  struct:
+    template: struct.py.vm
+  enum:
+    template: enum.py.vm
+  interface:
+    template: interface.py.vm
+  template_inst:
+    template: template_inst.py.vm
+  union:
+    template: union.py.vm
+  const:
+    template: const.py.vm
+
+# ── Type maps (used by TypeResolver / $types) ─────────────────────────────────
+primitive_types:
+  SHORT: int
+  LONG: int
+  LONG_LONG: int
+  UNSIGNED_SHORT: int
+  UNSIGNED_LONG: int
+  UNSIGNED_LONG_LONG: int
+  FLOAT: float
+  DOUBLE: float
+  LONG_DOUBLE: float
+  CHAR: str
+  WIDE_CHAR: str
+  OCTET: int
+  INT8: int
+  UINT8: int
+  INT16: int
+  UINT16: int
+  INT32: int
+  UINT32: int
+  INT64: int
+  UINT64: int
+  BOOLEAN: bool
+
+parameterized_types:
+  string: str
+  wstring: str
+  sequence: "List[{element}]"
+  array: "List[{element}]"
+
+# FACE namespace typedef aliases → Python types
+scoped_overrides:
+  "::FACE::GUID_TYPE": int
+  "FACE::GUID_TYPE": int
+  "::FACE::SYSTEM_TIME_TYPE": int
+  "FACE::SYSTEM_TIME_TYPE": int
+  "::FACE::TS_TYPE": int
+  "FACE::TS_TYPE": int
+  "::FACE::Short": int
+  "FACE::Short": int
+  "::FACE::Long": int
+  "FACE::Long": int
+  "::FACE::LongLong": int
+  "FACE::LongLong": int
+  "::FACE::UnsignedShort": int
+  "FACE::UnsignedShort": int
+  "::FACE::UnsignedLong": int
+  "FACE::UnsignedLong": int
+  "::FACE::UnsignedLongLong": int
+  "FACE::UnsignedLongLong": int
+  "::FACE::Octet": int
+  "FACE::Octet": int
+  "::FACE::WChar": int
+  "FACE::WChar": int
+  "::FACE::Float": float
+  "FACE::Float": float
+  "::FACE::Double": float
+  "FACE::Double": float
+  "::FACE::LongDouble": float
+  "FACE::LongDouble": float
+  "::FACE::Boolean": bool
+  "FACE::Boolean": bool
+  "::FACE::Char": str
+  "FACE::Char": str
+  "::FACE::STRING_TYPE": str
+  "FACE::STRING_TYPE": str
+  "::FACE::WSTRING_TYPE": str
+  "FACE::WSTRING_TYPE": str
+
+# Python scalar types — used by $types.isImmutable() in fieldDecl macro to
+# distinguish scalar fields (use literal default) from class fields (use field()).
+immutable_types:
+  - int
+  - float
+  - bool
+  - str
+boxed_types: {}
+
+# ── Naming ────────────────────────────────────────────────────────────────────
+# Python has no built-in renaming convention for IDL clashes; leave prefix empty.
+reserved_prefix: ""
+
+# Python keywords (not used by $types directly, but available as $reservedWords)
+reserved_words:
+  - False
+  - None
+  - True
+  - and
+  - as
+  - assert
+  - async
+  - await
+  - break
+  - class
+  - continue
+  - def
+  - del
+  - elif
+  - else
+  - except
+  - finally
+  - for
+  - from
+  - global
+  - if
+  - import
+  - in
+  - is
+  - lambda
+  - nonlocal
+  - not
+  - or
+  - pass
+  - raise
+  - return
+  - try
+  - while
+  - with
+  - yield
+
+# ── Post files ────────────────────────────────────────────────────────────────
+# __init__.py is emitted once per output directory that received ≥1 construct.
+post_files:
+  - trigger: per_output_directory
+    template: __init__.py.vm
+    path: __init__.py
+    context_key: classNames

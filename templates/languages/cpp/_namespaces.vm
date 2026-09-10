@@ -1,0 +1,27 @@
+## _namespaces.vm
+## Shared partial: open or close C++ namespace blocks.
+##
+## Usage (from any C++ per-construct template):
+##   #set($nsAction = "open")
+##   #parse("_namespaces.vm")
+##   ...
+##   #set($nsAction = "close")
+##   #parse("_namespaces.vm")
+##
+## Requires in Velocity context:
+##   $namespaces — List<String>  (module path segments, e.g. ["FACE","DM","SampleModel"])
+##   $nsAction   — String        ("open" or "close")
+##
+#if($nsAction == "open")
+#foreach($ns in $namespaces)
+namespace ${ns} {
+#end
+#else
+#set($revNs = [])
+#foreach($ns in $namespaces)
+#set($dummy = $revNs.add(0, $ns))
+#end
+#foreach($ns in $revNs)
+} // namespace ${ns}
+#end
+#end

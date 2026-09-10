@@ -1,0 +1,37 @@
+//! Source file: FACE/LCM/Initializable.idl
+
+#ifndef FACE_LCM_INITIALIZABLE
+#define FACE_LCM_INITIALIZABLE
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module LCM {
+
+  //! FACE does not define an interface to create or destroy instances. The
+  //! IDL language bindings address the syntax for those operations. The
+  //! LCM Interface assumes an existent software object that implements
+  //! one or more of the interfaces defined.
+
+  //! The Initializable module corresponds to the Initializable Capability.
+    module Initializable {
+      interface InitializableInstance {
+
+        //! The Initialize(LCM::Initializable) operation provides the
+        //! instance an opportunity to perform appropriate behaviors at the
+        //! corresponding execution point in its life-cycle.
+        void Initialize(
+          out RETURN_CODE_TYPE          return_code);
+
+        //! The Finalize(LCM::Initializable) operation provides the
+        //! instance an opportunity to perform appropriate behaviors at the
+        //! corresponding execution point in its life-cycle.
+        void Finalize(
+          out RETURN_CODE_TYPE          return_code);
+
+      }; // interface InitializableInstance
+    }; // module Initializable
+  };
+};
+
+#endif //! FACE_LCM_INITIALIZABLE

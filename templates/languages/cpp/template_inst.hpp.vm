@@ -1,0 +1,102 @@
+## template_inst.hpp.vm
+## Generates a single C++ header for a FACE template module instantiation.
+##
+## Context:
+##   $alias                — string: local alias name
+##   $namespaces           — List<String>: enclosing module path segments
+##   $definitions          — List<IdlDefinition>: substituted definitions
+##   $localInterfaces      — Set<String>: simple names of interfaces in this body
+##   $interfaceKindActuals — Set<String>: qualified names of interface-kind actuals
+##   $resolvedIncludes     — List<String>: relative include paths for resolved actuals
+##   $types                — TypeResolver
+##
+#set($guard = "${types.guard($namespaces, $alias)}_HPP")
+#set($H = "#")
+${H}pragma once
+${H}ifndef ${guard}
+${H}define ${guard}
+\#include <FACE/Common.hpp>
+\#include <FACE/TSS/Common.hpp>
+#foreach($inc in $resolvedIncludes)
+\#include <${inc}>
+#end
+
+#set($nsAction = "open")#parse("_namespaces.vm")
+namespace ${alias} {
+
+## Emit each definition in the instantiated template body
+#foreach($def in $definitions)
+#set($defType = $def.class.simpleName)
+## --------------------------------------------------------
+#if($defType == "InterfaceNode")
+class ${def.name} {
+public:
+    virtual ~${def.name}() {}
+#foreach($op in $def.operations)
+#if($op.oneway)
+    /// @note IDL oneway — fire-and-forget; no return value.
+#end
+#set($rt = $types.type($op.returnType))
+#set($hasRetval = false)
+#if(!$op.oneway && $rt != "void")
+#set($hasRetval = true)
+#end
+
+    virtual void ${op.name}(
+#foreach($param in $op.parameters)
+#if($foreach.last && !$hasRetval)
+        $types.paramDeclFull($param, $localInterfaces, $interfaceKindActuals)) = 0;
+#else
+        $types.paramDeclFull($param, $localInterfaces, $interfaceKindActuals),
+#end
+#end
+#if($hasRetval)
+        ${rt}& retval) = 0;
+#elseif($op.parameters.isEmpty())
+        ) = 0;
+#end
+#end
+protected:
+    ${def.name}() {}
+private:
+    ${def.name}(const ${def.name}&);
+    ${def.name}& operator=(const ${def.name}&);
+};
+## --------------------------------------------------------
+#elseif($defType == "StructNode")
+struct ${def.name}#if($def.baseType.isPresent()) : public ${def.baseType.get()}#end {
+#foreach($member in $def.members)
+    $types.typeDecl($member.type, $member.name);
+#end
+    ${def.name}()
+#foreach($member in $def.members)
+#if($foreach.first)
+        : ${member.name}($types.defaultInit($member.type))
+#else
+        , ${member.name}($types.defaultInit($member.type))
+#end
+#end
+    {}
+};
+## --------------------------------------------------------
+#elseif($defType == "EnumNode")
+struct ${def.name} {
+    enum Value {
+#foreach($val in $def.values)
+#if($foreach.last)
+        ${val.name}
+#else
+        ${val.name},
+#end
+#end
+    };
+private:
+    ${def.name}();
+};
+#end
+#end
+
+} // namespace ${alias}
+#set($nsAction = "close")#parse("_namespaces.vm")
+
+${H}endif // ${guard}

@@ -1,0 +1,127 @@
+//! Source file: FACE/IOSS/M1553.idl
+
+#ifndef FACE_IOSS_M1553
+#define FACE_IOSS_M1553
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the MIL-STD-1553 I/O Service.
+    module M1553 {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      enum TRANSMISSION_TYPE {
+        RECEIVE,
+        TRANSMIT
+      };
+
+      typedef unsigned short WORD_TYPE;
+      const WORD_TYPE CMD = 0;
+      const WORD_TYPE STATUS = 1;
+      const WORD_TYPE DATA = 2;
+      const octet MAX_WORD_COUNT = 32;
+      typedef sequence<WORD_TYPE, MAX_WORD_COUNT> DATA_BUFFER_TYPE;
+
+      struct ReadWriteBuffer {
+        octet bus_id;          // identify the MIL-STD-1553 bus
+                               //   (valid values: 0 - 31)
+        octet rt_number_1;     // remote Terminal Address
+                               //   (valid values: 0 - 31)
+        octet sa_number_1;     // sub Address Number
+                               //   (valid values: 0 - 31)
+        octet rt_number_2;     // remote Terminal Address used for RT-to-RT
+                               //   (value values: 0 - 31)
+        octet sa_number_2;     // sub Address Number used for RT-to-RT
+                               //   (value values: 0 - 31)
+        TRANSMISSION_TYPE t_r;
+        DATA_BUFFER_TYPE  data;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      typedef unsigned short CHANNEL_MODE_TYPE;
+      const CHANNEL_MODE_TYPE BC  = 0; // Bus Controller
+      const CHANNEL_MODE_TYPE BBC = 1; // Backup Bus Controller
+      const CHANNEL_MODE_TYPE RT  = 2; // Remote Terminal
+      const CHANNEL_MODE_TYPE BM  = 3; // Bus Monitor
+
+      //! Channel number; each channel may consist of one or more
+      //! redundant buses
+      const IO_PARAMETER_ID_TYPE CHANNEL_NUM = 0; // FACE_LONGLONG
+      //! Channel mode (CHANNEL_MODE_TYPE)
+      const IO_PARAMETER_ID_TYPE CHANNEL_MODE = 1; // FACE_USHORT
+      //! Release bus control state
+      const IO_PARAMETER_ID_TYPE
+        RELEASE_BUS_CONTROL_STATE = 2; // FACE_BOOLEAN
+      //! Configured terminal address
+      const IO_PARAMETER_ID_TYPE
+        CONFIGURED_TERMINAL_ADDRESS = 3; // FACE_ULONG
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      const BUS_STATUS_TYPE BC_IO_NO_RESPONSE = 0;
+      const BUS_STATUS_TYPE BC_IO_LOOP_TEST_FAIL = 1;
+      const BUS_STATUS_TYPE BC_IO_MSG_RETRIED = 2;
+      const BUS_STATUS_TYPE BC_IO_BAD_DATA_BLOCK = 3;
+      const BUS_STATUS_TYPE BC_IO_ADDRESS_ERROR = 4;
+      const BUS_STATUS_TYPE BC_IO_WORD_COUNT_ERROR = 5;
+      const BUS_STATUS_TYPE BC_IO_SYNC_ERROR = 6;
+      const BUS_STATUS_TYPE BC_IO_INVALID_WORD = 7;
+      const BUS_STATUS_TYPE RT_IO_TERMINAL_FLAG = 8;
+      const BUS_STATUS_TYPE RT_IO_SUBSYSTEM_FLAG = 9;
+      const BUS_STATUS_TYPE RT_IO_SERVICE_REQUEST = 10;
+      const BUS_STATUS_TYPE RT_IO_BUSY = 11;
+      const BUS_STATUS_TYPE RT_IO_DYNAMIC_BC = 12;
+      const BUS_STATUS_TYPE RT_IO_NO_RESPONSE = 13;
+      const BUS_STATUS_TYPE RT_IO_LOOP_TEST_FAIL = 14;
+      const BUS_STATUS_TYPE RT_IO_ILLEGAL_COMMAND_WORD = 15;
+      const BUS_STATUS_TYPE RT_IO_WORD_COUNT_ERROR = 16;
+      const BUS_STATUS_TYPE RT_IO_SYNC_ERROR = 17;
+      const BUS_STATUS_TYPE RT_IO_INVALID_WORD = 18;
+      const BUS_STATUS_TYPE RT_IO_RT_RT_GAP_SYNC_ADDR_ERROR = 19;
+      const BUS_STATUS_TYPE RT_IO_RT_RT_2ND_CMD_ERROR = 20;
+      const BUS_STATUS_TYPE RT_IO_COMMAND_WORD_ERROR = 21;
+      const BUS_STATUS_TYPE BM_IO_NO_RESPONSE = 22;
+      const BUS_STATUS_TYPE BM_IO_WORD_COUNT_ERROR = 23;
+      const BUS_STATUS_TYPE BM_IO_SYNC_ERROR = 24;
+      const BUS_STATUS_TYPE BM_IO_INVALID_WORD = 25;
+      const BUS_STATUS_TYPE BM_IO_RT_RT_GAP_SYNC_ADDR_ERROR = 26;
+      const BUS_STATUS_TYPE BM_IO_RT_RT_2ND_CMD_ERROR = 27;
+      const BUS_STATUS_TYPE BM_IO_COMMAND_WORD_ERROR = 28;
+      const BUS_STATUS_TYPE BM_IO_BAD_DATA_BLOCK = 29;
+      const BUS_STATUS_TYPE BM_IO_MESSAGE_ERROR = 30;
+      const BUS_STATUS_TYPE BM_IO_INSTRUMENTATION = 31;
+      const BUS_STATUS_TYPE BM_IO_SERVICE_REQUEST = 32;
+      const BUS_STATUS_TYPE BM_IO_RESERVED_BITS = 33;
+      const BUS_STATUS_TYPE BM_IO_BROADCAST_RCVD = 34;
+      const BUS_STATUS_TYPE BM_IO_BUSY = 35;
+      const BUS_STATUS_TYPE BM_IO_SF = 36;
+      const BUS_STATUS_TYPE BM_IO_DYNAMIC_BC = 37;
+      const BUS_STATUS_TYPE BM_IO_TF = 38;
+      const BUS_STATUS_TYPE DRIVER_READY = 39;
+      const BUS_STATUS_TYPE DRIVER_ERROR = 40;
+      const BUS_STATUS_TYPE UNKNOWN_ERROR = 41;
+      const BUS_STATUS_TYPE RX_SUCCESS = 42;
+      const BUS_STATUS_TYPE TX_SUCCESS = 43;
+      const BUS_STATUS_TYPE RXMODE_SUCCESS = 44;
+      const BUS_STATUS_TYPE TXMODE_SUCCESS = 45;
+      const BUS_STATUS_TYPE RT_TO_RT_SUCCESS = 46;
+      const BUS_STATUS_TYPE BC_IO_GO = 47;
+      const BUS_STATUS_TYPE BC_IO_NOGO_A = 48;
+      const BUS_STATUS_TYPE BC_IO_NOGO_B = 49;
+      const BUS_STATUS_TYPE BC_IO_NOGO_T = 50;
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<M1553::ReadWriteBuffer> M1553;
+  };
+};
+
+#endif //! FACE_IOSS_M1553

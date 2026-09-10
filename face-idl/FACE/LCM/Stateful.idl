@@ -1,0 +1,38 @@
+//! Source file: FACE/LCM/Stateful.idl
+
+#ifndef FACE_LCM_STATEFUL
+#define FACE_LCM_STATEFUL
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module LCM {
+
+  //! FACE does not define an interface to create or destroy instances. The
+  //! IDL language bindings address the syntax for those operations. The
+  //! LCM Interface assumes an existent software object that implements
+  //! one or more of the interfaces defined.
+
+  //! The Stateful module corresponds to the Stateful Capability.
+    module Stateful<typename REQUESTED_STATE_VALUE_TYPE,
+                    typename REPORTED_STATE_VALUE_TYPE> {
+      interface StatefulInstance {
+
+        //! The Query_State(LCM::Stateful) operation is called to retrieve
+        //! the instance's current state.
+        void Query_State(
+          out REPORTED_STATE_VALUE_TYPE current_state,
+          out RETURN_CODE_TYPE          return_code);
+
+        //! The Request_State_Transition(LCM::Stateful) operation is called
+        //! to request that the instance transition to 'new_state'.
+        void Request_State_Transition(
+          in REQUESTED_STATE_VALUE_TYPE new_state,
+          out RETURN_CODE_TYPE          return_code);
+
+      }; // interface StatefulInstance
+    }; // module Stateful
+  };
+};
+
+#endif //! FACE_LCM_STATEFUL

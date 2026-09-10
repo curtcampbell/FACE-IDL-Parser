@@ -1,0 +1,174 @@
+//! Source file: FACE/TSS/Primitive_Marshalling.idl
+
+#ifndef FACE_TSS_PRIMITIVE_MARSHALLING
+#define FACE_TSS_PRIMITIVE_MARSHALLING
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+
+      //! Protocol-specific base type serialization      
+      //! A serialization and deserialization method is provided for each
+      //! of the base types.
+      interface Primitive_Marshalling {
+        void Marshal_short (
+          in    short            data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed, 
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_short (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   short            data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_long (
+          in    long             data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_long (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   long             data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_long_long (
+          in    long long        data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_long_long (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   long long        data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_unsigned_short (
+          in    unsigned short   data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_unsigned_short (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   unsigned short   data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_unsigned_long (
+          in    unsigned long    data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_unsigned_long (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   unsigned long    data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_unsigned_long_long (
+          in    unsigned long long data, 
+          in    DATA_BUFFER_TYPE   buffer, 
+          out   BYTE_SIZE_TYPE     bytes_consumed,
+          out   RETURN_CODE_TYPE   return_code); 
+        
+        void Unmarshal_unsigned_long_long (
+          in    DATA_BUFFER_TYPE   buffer, 
+          out   unsigned long long data,
+          out   BYTE_SIZE_TYPE     bytes_consumed,
+          out   RETURN_CODE_TYPE   return_code);
+        
+        void Marshal_float (
+          in    float            data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_float (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   float            data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_double (
+          in    double           data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_double (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   double           data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_long_double (
+          in    long double      data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code); 
+        
+        void Unmarshal_long_double (
+          in    DATA_BUFFER_TYPE buffer, 
+          out   long double      data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_char (
+          in    char             data, 
+          in    DATA_BUFFER_TYPE buffer, 
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Unmarshal_char (
+          in    DATA_BUFFER_TYPE buffer,
+          out   char             data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_boolean (
+          in    boolean          data,
+          in    DATA_BUFFER_TYPE buffer,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Unmarshal_boolean (
+          in    DATA_BUFFER_TYPE buffer,
+          out   boolean          data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_octet (
+          in    octet            data,
+          in    DATA_BUFFER_TYPE buffer,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Unmarshal_octet (
+          in    DATA_BUFFER_TYPE buffer,
+          out   octet            data,
+          out   BYTE_SIZE_TYPE   bytes_consumed,
+          out   RETURN_CODE_TYPE return_code);
+        
+        void Marshal_string (
+          in    UNBOUNDED_STRING_TYPE data,
+          in    DATA_BUFFER_TYPE      buffer,
+          out   BYTE_SIZE_TYPE        bytes_consumed,
+          out   RETURN_CODE_TYPE      return_code);
+        
+        void Unmarshal_string (
+          in    DATA_BUFFER_TYPE      buffer,
+          out   UNBOUNDED_STRING_TYPE data,
+          out   BYTE_SIZE_TYPE        bytes_consumed,
+          out   RETURN_CODE_TYPE      return_code);
+      };
+  };
+};
+
+#endif //! FACE_TSS_PRIMITIVE_MARSHALLING

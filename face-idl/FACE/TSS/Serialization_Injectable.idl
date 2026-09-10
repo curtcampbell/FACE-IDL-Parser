@@ -1,0 +1,20 @@
+//! Source file: FACE/TSS/Serialization_Injectable.idl
+
+#ifndef FACE_TSS_SERIALIZATION_INJECTABLE
+#define FACE_TSS_SERIALIZATION_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/Serialization.idl>
+
+module FACE {
+  module TSS {
+
+    //! Template module instantiation for Serialization Interface
+    module Injectable<
+        FACE::TSS::Serialization
+      > Serialization_Injectable;
+
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_SERIALIZATION_INJECTABLE

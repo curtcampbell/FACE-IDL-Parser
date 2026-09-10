@@ -1,0 +1,26 @@
+//! Source file: FACE/Injectable.idl
+
+#ifndef FACE_INJECTABLE
+#define FACE_INJECTABLE
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module Injectable<interface INTERFACE_TYPE> {
+    interface Injectable {
+      //! The Set_Reference(Injectable) function assigns an instance
+      //! of an interface provider specified by interface_reference.
+      //!
+      //! Note: The interface_reference parameter is semantically an
+      //!       in parameter but is inout to avoid an undesirable
+      //!       mapping in C++.
+      void Set_Reference (
+        in    STRING_TYPE      interface_name,
+        inout INTERFACE_TYPE   interface_reference,
+        in    GUID_TYPE        id,
+        out   RETURN_CODE_TYPE return_code);
+    };
+  };
+};
+
+#endif //! FACE_INJECTABLE

@@ -1,0 +1,23 @@
+//! Source file: FACE/IOSS/MultiChannelDiscrete_Injectable.idl
+
+#ifndef FACE_IOSS_MULTICHANNELDISCRETE_INJECTABLE
+#define FACE_IOSS_MULTICHANNELDISCRETE_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/MultiChannelDiscrete.idl>
+
+module FACE {
+  module IOSS {
+    module MultiChannelDiscrete {
+
+      //! Template module instantiation for MultiChannelDiscrete I/O Service 
+      //! Interface
+      module Injectable<
+        FACE::IOSS::MultiChannelDiscrete::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module MultiChannelDiscrete
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_MULTICHANNELDISCRETE_INJECTABLE

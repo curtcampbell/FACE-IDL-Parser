@@ -1,0 +1,23 @@
+//! Source file: FACE/TSS/CSP_Injectable.idl
+
+#ifndef FACE_TSS_CSP_INJECTABLE
+#define FACE_TSS_CSP_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/CSP.idl>
+
+module FACE {
+  module TSS {
+    module CSP {
+
+      //! Template module instantiation for Component State Persistence
+      //! Interface
+      module Injectable<
+        FACE::TSS::CSP::CSP
+      > CSP_Injectable;
+
+    }; // module CSP
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_CSP_INJECTABLE

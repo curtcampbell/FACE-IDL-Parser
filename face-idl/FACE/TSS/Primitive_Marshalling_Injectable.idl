@@ -1,0 +1,21 @@
+//! Source file: FACE/TSS/Primitive_Marshalling_Injectable.idl
+
+#ifndef FACE_TSS_PRIMITIVE_MARSHALLING_INJECTABLE
+#define FACE_TSS_PRIMITIVE_MARSHALLING_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/TSS/Primitive_Marshalling.idl>
+
+module FACE {
+  module TSS {
+
+      //! Template module instantiation for Primitive Marshalling
+      //! Interface
+      module Injectable<
+        FACE::TSS::Primitive_Marshalling
+      > Primitive_Marshalling_Injectable;
+
+  }; // module TSS
+}; // module FACE
+
+#endif //! FACE_TSS_PRIMITIVE_MARSHALLING_INJECTABLE

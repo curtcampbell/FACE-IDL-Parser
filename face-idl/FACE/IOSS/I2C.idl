@@ -1,0 +1,99 @@
+//! Source file: FACE/IOSS/I2C.idl
+
+#ifndef FACE_IOSS_I2C
+#define FACE_IOSS_I2C
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the I2C I/O Service.
+    module I2C {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      typedef unsigned short SLAVE_ADDRESS_TYPE;
+      typedef unsigned short SLAVE_ADDRESS_SIZE_TYPE;
+
+      typedef SYSTEM_ADDRESS_TYPE MESSAGE_ADDR_TYPE;
+
+      const SLAVE_ADDRESS_SIZE_TYPE SLAVE_ADDRESS_SIZE_7  = 0;
+      const SLAVE_ADDRESS_SIZE_TYPE SLAVE_ADDRESS_SIZE_10 = 1;
+      const SLAVE_ADDRESS_SIZE_TYPE SLAVE_ADDRESS_SIZE_16 = 2;
+
+      //! For slave read operation, if the slave buffer address is
+      //! different than the slave RX Buffer address then the slave RX
+      //! Buffer address is reset.
+      //!
+      //! For slave write operation, if the slave buffer address is
+      //! different than the slave TX Buffer address then the slave TX
+      //! Buffer address is reset.
+      struct MASTER_COMMAND_TYPE {
+        SLAVE_ADDRESS_SIZE_TYPE slave_address_size;
+        SLAVE_ADDRESS_TYPE      slave_address;
+        unsigned short          message_length;
+        MESSAGE_ADDR_TYPE       data_buffer_address;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! Master or slave - FALSE = slave; TRUE = master
+      const IO_PARAMETER_ID_TYPE IS_MASTER = 0; // FACE_BOOLEAN
+      //! Baud
+      const IO_PARAMETER_ID_TYPE BAUD = 1; // FACE_LONG
+      //! Slave address - value type: SLAVE_ADDRESS_TYPE
+      const IO_PARAMETER_ID_TYPE MY_ADDRESS = 2; // FACE_USHORT
+      //! Slave RX buffer address - value type: MESSAGE_ADDR_TYPE
+      const IO_PARAMETER_ID_TYPE RX_BUFFER_ADDRESS = 3;
+      //! Slave RX buffer length
+      const IO_PARAMETER_ID_TYPE RX_BUFFER_LENGTH = 4; // FACE_ULONG
+      //! Slave TX buffer address - value type: MESSAGE_ADDR_TYPE
+      const IO_PARAMETER_ID_TYPE TX_BUFFER_ADDRESS = 5;
+      //! Slave TX buffer length
+      const IO_PARAMETER_ID_TYPE TX_BUFFER_LENGTH = 6; // FACE_ULONG
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      const BUS_STATUS_TYPE DEVICE_OPERATIONAL = 0;
+      const BUS_STATUS_TYPE OVERRUN_ERROR      = 1;
+      const BUS_STATUS_TYPE PARITY_ERROR       = 2;
+      const BUS_STATUS_TYPE FRAMING_ERROR      = 3;
+      const BUS_STATUS_TYPE ADDRESS_ERROR      = 4;    
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<I2C::MASTER_COMMAND_TYPE> I2C;
+
+    //! Extend the I2C I/O Service interface for atomic combined
+    //! read/write.
+    module I2C {
+      enum COMMAND_KIND_TYPE {
+        READ,
+        WRITE
+      };         
+      struct ATOMIC_IO_DEF_ENTRY_TYPE {
+        COMMAND_KIND_TYPE   cmd;
+        MASTER_COMMAND_TYPE master_command;
+      };
+      typedef sequence <ATOMIC_IO_DEF_ENTRY_TYPE> MASTER_COMMANDS_TYPE;
+
+      //! The Perform_Combined_Commands function allows the PSSS UoC to 
+      //! request a set of write and/or read commands be performed by a
+      //! master.
+      interface Combined_RW_IO_Service : I2C::IO_Service {
+        void Perform_Combined_Commands (
+          in    CONNECTION_HANDLE_TYPE handle,
+          in    TIMEOUT_TYPE           timeout,
+          inout MASTER_COMMANDS_TYPE   payload,
+          out   RETURN_CODE_TYPE       return_code);
+      };
+    };
+  };
+};
+
+#endif //! FACE_IOSS_I2C

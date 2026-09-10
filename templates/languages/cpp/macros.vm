@@ -1,0 +1,14 @@
+## macros.vm — C++ language macro library
+## Loaded before every C++ template (macro_library: macros.vm in language.yaml).
+## Replaces the legacy $cpp.* helper methods from CppTypeHelper.
+##
+## All heavy lifting is done by $types.* (TypeResolver):
+##   $types.guard($namespaces, $name)   — header guard token
+##   $types.typeDecl($type, $name)      — member declaration with array brackets
+##   $types.defaultInit($type)          — zero-init expression
+##   $types.paramDecl($param)           — FACE TS §4.14.8.10.2 parameter declaration
+##   $types.paramDeclFull($param, $li, $ika) — interface-aware parameter declaration
+##   $types.type($type)                 — C++ type string
+##   $types.includePathFor($name)       — relative #include path
+##
+## This file is intentionally sparse; macros can be added here as needed.

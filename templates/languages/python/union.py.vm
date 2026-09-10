@@ -1,0 +1,43 @@
+## union.py.vm
+## Generates one Python module for an IDL union declaration.
+## Python has no normative FACE TS mapping for unions; this uses a simple class
+## with a discriminant property and per-branch setter/getter methods.
+##
+## Context:
+##   $union       — UnionNode
+##   $moduleStack — List<String>
+##   $types       — TypeResolver
+##
+from __future__ import annotations
+from typing import Optional
+
+
+class ${union.name}:
+    """IDL union ``${union.name}``.
+
+    Discriminant type: ``$types.type($union.switchType)}``.
+    Exactly one branch member is active at a time; the discriminant
+    records which branch was last set.
+    """
+
+    def __init__(self) -> None:
+        self._disc: Optional[$types.type($union.switchType)}] = None
+#foreach($case in $union.cases)
+        self._${case.name}: Optional[$types.type($case.type)}] = None
+#end
+
+    @property
+    def discriminator(self) -> Optional[$types.type($union.switchType)}]:
+        """The active discriminant value."""
+        return self._disc
+
+#foreach($case in $union.cases)
+    # Case: #if($case.default)default#{else}$case.labels#end
+    def set_${case.name}(self, v: $types.type($case.type)}) -> None:
+        self._disc = $case.labels.get(0)
+        self._${case.name} = v
+
+    def get_${case.name}(self) -> Optional[$types.type($case.type)}]:
+        return self._${case.name}
+
+#end

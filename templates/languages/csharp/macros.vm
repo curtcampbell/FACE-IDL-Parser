@@ -1,0 +1,109 @@
+## macros.vm — C# language macro library
+## Loaded before every C# template (macro_library: macros.vm in language.yaml).
+## Replaces the legacy $cs.* helper methods from CsharpTypeHelper.
+##
+## immutable_types in language.yaml lists C# value types + string so that
+## $types.isImmutable() correctly identifies types that can be assigned directly
+## in copy constructors (equivalent to CsharpTypeHelper.isValueType()).
+##
+## Convention: content-producing lines end with ## to suppress trailing newlines.
+
+## ---------------------------------------------------------------------------
+## toPascalCase($n) — "FooBar" from "foo_bar" or "FooBar"
+## Splits on '_', capitalises first char of each segment.
+## ---------------------------------------------------------------------------
+#macro(toPascalCase $n)#foreach($__seg in $n.split("_"))#if(!$__seg.isEmpty())${__seg.substring(0,1).toUpperCase()}${__seg.substring(1)}#end#end#end
+
+## ---------------------------------------------------------------------------
+## toCamelCase($n) — "fooBar" from "foo_bar" or "FooBar"
+## PascalCase with first character lowercased.
+## ---------------------------------------------------------------------------
+#macro(toCamelCase $n)#set($__p = "")#foreach($__seg in $n.split("_"))#if(!$__seg.isEmpty())#if($__p == "")#set($__p = "${__seg.substring(0,1).toLowerCase()}${__seg.substring(1)}")#else#set($__p = "${__p}${__seg.substring(0,1).toUpperCase()}${__seg.substring(1)}")#end#end#end${__p}#end
+
+## ---------------------------------------------------------------------------
+## idlParamSummary($op) — "in string timeout, out long rc" (for doc comments)
+## ---------------------------------------------------------------------------
+#macro(idlParamSummary $op)
+#set($__first = true)
+#foreach($__p in $op.parameters)
+#if(!$__first), #end##
+${__p.direction.toString().toLowerCase()} $types.type($__p.type) $__p.name##
+#set($__first = false)
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## csharpReturnType($op) — void / T / (T1 Name1, T2 Name2, …)
+## out/inout params are moved to the return; multiple returns → named tuple.
+## ---------------------------------------------------------------------------
+#macro(csharpReturnType $op)
+#set($__outs = [])
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() != "IN")
+#set($__d = $__outs.add($__p))
+#end
+#end
+#set($__hasRet = false)
+#if($op.returnType.class.simpleName != "Void")
+#set($__hasRet = true)
+#end
+#set($__total = $__outs.size())
+#if($__hasRet)
+#set($__total = $__total + 1)
+#end
+#if($__total == 0)
+void##
+#elseif($__total == 1)
+#if($__hasRet)
+$types.type($op.returnType)##
+#else
+$types.type($__outs.get(0).type)##
+#end
+#else
+(#if($__hasRet)$types.type($op.returnType) ReturnValue#if(!$__outs.isEmpty()), #end#end#foreach($__p in $__outs)$types.type($__p.type) $types.toPascalCase($__p.name)#if(!$foreach.last), #end#end)##
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## inputParamList($op) — "T1 camelName1, T2 camelName2, …" for in/inout params
+## out-only params are excluded (they appear only in the return type).
+## ---------------------------------------------------------------------------
+#macro(inputParamList $op)
+#set($__first = true)
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() == "IN" || $__p.direction.toString() == "INOUT")
+#if(!$__first), #end##
+$types.type($__p.type) $types.toCamelCase($__p.name)##
+#set($__first = false)
+#end
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## copyExpr($type $propName) — RHS of copy-constructor field assignment.
+##
+## Value types / string → source.PropName  (direct assign)
+## Sequence of values  → new List<T>(source.P)
+## Sequence of classes → source.P?.Select(x => new T(x)).ToList()
+## Array               → (T[])(source.P?.Clone())
+## Reference class     → source.P != null ? new T(source.P) : null
+##
+## Relies on immutable_types in language.yaml for isValueType detection.
+## ---------------------------------------------------------------------------
+#macro(copyExpr $type $propName)
+#set($__src = "source.${propName}")
+#set($__tn = $type.class.simpleName)
+#if($types.isImmutable($type))
+${__src}##
+#elseif($__tn == "Sequence")
+#if($types.isImmutable($type.elementType))
+${__src} != null ? new System.Collections.Generic.List<$types.type($type.elementType)>(${__src}) : null##
+#else
+${__src}?.Select(x => new $types.type($type.elementType)(x)).ToList()##
+#end
+#elseif($__tn == "Array")
+($types.type($type))(${__src}?.Clone())##
+#else
+${__src} != null ? new $types.type($type)(${__src}) : null##
+#end
+#end

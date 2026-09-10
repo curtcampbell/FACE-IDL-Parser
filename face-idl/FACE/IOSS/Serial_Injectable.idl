@@ -1,0 +1,22 @@
+//! Source file: FACE/IOSS/Serial_Injectable.idl
+
+#ifndef FACE_IOSS_SERIAL_INJECTABLE
+#define FACE_IOSS_SERIAL_INJECTABLE
+
+#include <FACE/Injectable.idl>
+#include <FACE/IOSS/Serial.idl>
+
+module FACE {
+  module IOSS {
+    module Serial {
+
+      //! Template module instantiation for Serial I/O Service Interface
+      module Injectable<
+        FACE::IOSS::Serial::IO_Service
+      > IO_Service_Injectable;
+
+    }; // module Serial
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_SERIAL_INJECTABLE

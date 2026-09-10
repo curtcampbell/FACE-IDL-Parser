@@ -1,0 +1,289 @@
+//! Source file: FACE/IOSS/IOS.idl
+
+#ifndef FACE_IOSS_IOS
+#define FACE_IOSS_IOS
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module IOSS {
+
+    //! The status of the I/O device bus, separate from the status of a
+    //! single I/O connection or of a device attached to that bus.
+    //!
+    //! NOTE: Bus-specific status constants are defined in their respective
+    //!   namespaces.
+    typedef unsigned short BUS_STATUS_TYPE;
+
+    //! I/O parameters are used to programmatically query or change
+    //! properties of an I/O connection or its underlying bus after
+    //! initialization. This may be a necessary part of PSSS UoC logic,
+    //! such as auto-negotiating serial baud rate, and is fundamentally
+    //! different from the FACE Configuration Interface that maps to an 
+    //! underlying and existent configuration resource.
+    //!
+    //! Each I/O Service defines the specific I/O parameters it supports
+    //! based on the I/O connection analogy and the I/O bus architecture.
+    //! The declarations here are the basis of those specific definitions.
+
+    //! Used to declare constants to represent supported I/O parameters.
+    //!
+    //! NOTE: Bus-specific parameter IDs are defined in their namespaces.
+    typedef unsigned short IO_PARAMETER_ID_TYPE;
+
+    //! Used by I/O functions to specify the I/O connection addressed
+    //! by the handle.
+    typedef long long CONNECTION_HANDLE_TYPE;
+
+    //! INVALID_CONNECTION_HANDLE and IGNORED_CONNECTION_HANDLE as sentinel
+    //!   values.
+    const CONNECTION_HANDLE_TYPE INVALID_CONNECTION_HANDLE = -1;
+    const CONNECTION_HANDLE_TYPE IGNORED_CONNECTION_HANDLE = 0;
+      
+    module IO_Service_Module<struct PAYLOAD_DATA_MSG_TYPE> {
+      //! All declarations are in this template module so that the
+      //! instantiated module for each I/O Service has a fully qualified
+      //! type that is distinct. This improves type safety in the resulting
+      //! language mappings.
+
+      //! The unique name of the I/O connection. It is passed to Open(I/O)
+      //! and typically is used to assign values specified in the
+      //! configuration resource given to Initialize(I/O).
+      typedef STRING_TYPE CONNECTION_NAME_TYPE;
+
+      //! Enumeration of the status condition of the I/O connection.
+      enum IO_CONNECTION_STATUS_TYPE {
+        NOT_OPEN,      // initial state prior to opening the connection
+        CONNECTING,// transient state where attempt is being made to open
+                   //   the connection
+        READY,     // connection ready for service; it can now accept data
+                   //   r/w operations
+        BUSY,      // connection has congestion and cannot accept more data
+        DEGRADED   // connection not fully operational; there is some kind
+                   //   of failure
+      };
+
+      //! This status represents the health of an I/O connection and
+      //! availability of messages. It does not represent the status of the
+      //! I/O device associated with the connection.
+      struct CONNECTION_STATUS_TYPE {
+        SYSTEM_TIME_TYPE          last_message_time;
+        boolean                   message_available;
+        IO_CONNECTION_STATUS_TYPE connection_status;
+      };
+
+      //! List of possible types for an I/O parameter value.
+      enum IO_PARAMETER_VALUE_TYPES_TYPE {
+        FACE_SHORT,
+        FACE_LONG,
+        FACE_LONGLONG,
+        FACE_USHORT,
+        FACE_ULONG,
+        FACE_ULONGLONG,
+        FACE_FLOAT,
+        FACE_DOUBLE,
+        FACE_LONGDOUBLE,
+        FACE_CHAR,
+        FACE_BOOLEAN,
+        FACE_OCTET
+      };
+
+      //! The value for an I/O parameter.
+      //!
+      //! NOTE: Bus-specific parameter values are defined in their
+      //!   namespaces.
+      union IO_PARAMETER_VALUE_TYPE switch (IO_PARAMETER_VALUE_TYPES_TYPE)
+      {
+        case FACE_SHORT:      short              short_value;
+        case FACE_LONG:       long               long_value;
+        case FACE_LONGLONG:   long long          longlong_value;
+        case FACE_USHORT:     unsigned short     ushort_value;
+        case FACE_ULONG:      unsigned long      ulong_value;
+        case FACE_ULONGLONG:  unsigned long long ulonglong_value;
+        case FACE_FLOAT:      float              float_value;
+        case FACE_DOUBLE:     double             double_value;
+        case FACE_LONGDOUBLE: long double        longdouble_value;
+        case FACE_CHAR:       char               char_value;
+        case FACE_BOOLEAN:    boolean            boolean_value;
+        case FACE_OCTET:      octet              octet_value;
+      };
+
+      //! Represent a single (ID,value) pair and a list of pairs.
+      struct IO_PARAMETER {
+        IO_PARAMETER_ID_TYPE    id;
+        IO_PARAMETER_VALUE_TYPE value;
+      };
+      typedef sequence<IO_PARAMETER> IO_PARAMETER_LIST;
+
+      //! Used to pass configuration properties across the I/O Service
+      //! Interface.
+      struct IO_PARAMETER_TRANSACTION_TYPE {
+        GUID_TYPE         guid; // used to differentiate transactions
+        IO_PARAMETER_LIST items;
+      }; 
+
+      //! The interface is designed to operate with a local or remote
+      //! implementation. Thus the timeout parameter on the interfaces
+      //! allow the user call to block while the request may be remotely
+      //! processed. A value of NO_WAIT indicates the request should be
+      //! made but there should be no waiting for a response before
+      //! returning to the caller. In such a case the action may not occur
+      //! immediately. A value of WAIT_FOREVER indicates waiting
+      //! indefinitely.
+      const TIMEOUT_TYPE NO_WAIT = 0;
+      const TIMEOUT_TYPE WAIT_FOREVER = -1;
+
+      //! Notification events are generated when the PSSS UoC has
+      //! registered a handler callback
+      //! (see Register_Notification_Event_Handler(I/O)).
+
+      //! Enumeration of the type of the notification event.
+      enum NOTIFICATION_EVENT_TYPE {
+        DATA_READ_EVENT,                // Data is available via Read()
+        CONNECTION_CONFIG_CHANGE_EVENT, // Use 
+                                        // Get_Connection_Configuration()
+                                        //   for new parameters
+        CONNECTION_STATUS_CHANGE_EVENT, // Use Get_Connection_Status()
+        BUS_CONFIG_CHANGE_EVENT,        // Use Get_Bus_Configuration() for
+                                        //   new parameters
+        BUS_STATUS_CHANGE_EVENT         // Use Get_Bus_Status()
+      };
+
+      //! Defines the function prototype for a notification callback.
+      //!
+      //! NOTE: 'handle' is IGNORED_CONNECTION_HANDLE when
+      //!   'notification_event' is a bus event.
+      interface IO_Callback {
+        void Process_Notification_Event (
+          in CONNECTION_HANDLE_TYPE  handle,
+          in NOTIFICATION_EVENT_TYPE notification_event);
+      }; // interface IO_Callback
+
+      interface IO_Service {      
+        //! The Initialize(I/O) function allows the PSSS UoC to provide a
+        //! configuration resource to use when initializing an I/O Service.
+        void Initialize (
+          in  CONFIGURATION_RESOURCE config_resource, 
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Open_Connection(I/O) function is used by the PSSS UoC to
+        //! create a connection to an I/O device. A unique handle for the
+        //! connection is returned on success, or
+        //! INVALID_CONNECTION_HANDLE.
+        void Open_Connection (
+          in  CONNECTION_NAME_TYPE   name,
+          in  TIMEOUT_TYPE           timeout,
+          out CONNECTION_HANDLE_TYPE handle,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Close_Connection(I/O) function is used by the PSSS UoC to
+        //! close a connection and release the addressed handle.
+        void Close_Connection (
+          in  CONNECTION_HANDLE_TYPE handle,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! This structure defines the data payload format for reads.
+        //! received_time is the time stamp most closely associated with
+        //! the last byte going into the buffer. If received_time is set to
+        //! IGNORE_RECEIVED_TIME, it should be ignored.
+        const SYSTEM_TIME_TYPE IGNORE_RECEIVED_TIME = 0;
+        struct READ_PAYLOAD_TYPE {
+          SYSTEM_TIME_TYPE  received_time;
+          PAYLOAD_DATA_MSG_TYPE payload;
+        };
+
+        //! The Read(I/O) function allows the PSSS UoC to synchronously
+        //! receive (poll for) payload data. It is also called by the PSSS
+        //! UoC to asynchronously receive payload data when a registered
+        //! notification callback receives a DATA_READ_EVENT.
+        void Read (
+          in    CONNECTION_HANDLE_TYPE handle,
+          in    TIMEOUT_TYPE           timeout,
+          inout READ_PAYLOAD_TYPE      payload,
+          out   RETURN_CODE_TYPE       return_code);
+
+        //! This structure defines the data payload format for writes.
+        struct WRITE_PAYLOAD_TYPE {
+          PAYLOAD_DATA_MSG_TYPE payload;
+        };
+
+        //! The Write(I/O) operation call allows the PSSS UoC to
+        //! synchronously send payload data.
+        void Write (
+          in  CONNECTION_HANDLE_TYPE handle,
+          in  TIMEOUT_TYPE           timeout,
+          in  WRITE_PAYLOAD_TYPE     payload,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Configure_Connection_Parameters(I/O) function allows the
+        //! PSSS UoC to assign I/O parameters for a connection.
+        void Configure_Connection_Parameters (
+          in  CONNECTION_HANDLE_TYPE        handle,
+          in  TIMEOUT_TYPE                  timeout,
+          in  IO_PARAMETER_TRANSACTION_TYPE parameters,
+          out RETURN_CODE_TYPE              return_code);
+
+        //! The Get_Connection_Configuration(I/O) function allows the PSSS
+        //! UoC to query I/O parameters for a connection.
+        void Get_Connection_Configuration (
+          in    CONNECTION_HANDLE_TYPE        handle,
+          in    TIMEOUT_TYPE                  timeout,
+          inout IO_PARAMETER_TRANSACTION_TYPE parameters,
+          out   RETURN_CODE_TYPE              return_code);
+
+        //! The Configure_Bus_Parameters(I/O) function allows the PSSS UoC
+        //! to assign I/O parameters for the I/O bus underlying an
+        //! I/O connection.
+        void Configure_Bus_Parameters (
+          in  CONNECTION_HANDLE_TYPE        handle,
+          in  TIMEOUT_TYPE                  timeout,
+          in  IO_PARAMETER_TRANSACTION_TYPE parameters,
+          out RETURN_CODE_TYPE              return_code);
+
+        //! The Get_Bus_Configuration(I/O) function allows the PSSS UoC to
+        //! query I/O parameters for the I/O bus underlying an I/O
+        //! connection.
+        void Get_Bus_Configuration (
+          in    CONNECTION_HANDLE_TYPE        handle,
+          in    TIMEOUT_TYPE                  timeout,
+          inout IO_PARAMETER_TRANSACTION_TYPE parameters,
+          out   RETURN_CODE_TYPE              return_code);
+
+        //! The Get_Connection_Status(I/O) function allows the PSSS UoC to
+        //! query for connection status information.
+        void Get_Connection_Status (
+          in  CONNECTION_HANDLE_TYPE handle,
+          out CONNECTION_STATUS_TYPE status,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Get_Bus_Status(I/O) function allows the PSSS UoC to query
+        //! for status information of the bus underlying an I/O connection.
+        void Get_Bus_Status (
+          in  CONNECTION_HANDLE_TYPE handle,
+          out BUS_STATUS_TYPE        status,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Register_Notification_Event(I/O) function is used by
+        //! the PSSS UoC to register a callback function that is called by
+        //! the I/O Service when an event occurs on the given connection.
+        //!
+        //! Note: The io_callback parameter is semantically an in parameter
+        //!       but is inout to avoid an undesirable mapping in C++.
+        void Register_Notification_Event (
+          in     CONNECTION_HANDLE_TYPE handle,
+          inout  IO_Callback            io_callback,
+          out    RETURN_CODE_TYPE       return_code);
+
+        //! The Unregister_Notification_Event(I/O) function is used
+        //! by the PSSS UoC to unregister the callback previously
+        //! associated with the connection.
+        void Unregister_Notification_Event (
+          in  CONNECTION_HANDLE_TYPE handle,
+          out RETURN_CODE_TYPE       return_code);
+
+      }; // interface IO_Service
+    }; // module IO_Service_Module<>
+  }; // module IOSS
+}; // module FACE
+
+#endif //! FACE_IOSS_IOS

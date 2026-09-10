@@ -1,0 +1,71 @@
+## EntityEvent.vtl
+## Generates EntityEvent.idl — EventType, ChangedField, ChangedFieldList_Type, EntityEvent.
+## Content is effectively static; module nesting and guard come from $model.
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_ENTITYEVENT_IDL")
+//! Source file: ${model.sourcePathFor("EntityEvent.idl")}
+//!
+//! Reactor-to-subscriber notification delivered on ER_NOTIFY_<N> connections.
+//! Carries a full entity snapshot plus change metadata for one lifecycle event.
+//!
+//! Supporting types defined here (exclusively consumed by EntityEvent):
+//!   EventType              — discriminant identifying the lifecycle event
+//!   ChangedField           — identifies one field that changed in an UPDATE
+//!   MAX_FIELDS_PER_ENTITY  — upper bound on leaf fields per entity type
+//!   ChangedFieldList_Type  — bounded sequence of ChangedField
+//!
+//! Dependencies (via EntityPayload.idl):
+//!   EntityID_Type, EntityTypeEnum, EntityPayload
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+\#include "EntityPayload.idl"
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! Identifies the lifecycle event that triggered an EntityEvent notification.
+${contentIndent}  enum EventType {
+${contentIndent}    EVENT_CREATED,  //! Entity was created
+${contentIndent}    EVENT_UPDATED,  //! One or more entity fields were updated
+${contentIndent}    EVENT_DELETED,  //! Entity was explicitly deleted
+${contentIndent}    EVENT_EXPIRED   //! Entity expiration timestamp was reached
+${contentIndent}  };
+
+${contentIndent}  //! Identifies one field that changed in an UPDATE event.
+${contentIndent}  //! position_index is scoped to the immediately containing struct,
+${contentIndent}  //! starting at zero [ER-083]. qualified_name provides the full
+${contentIndent}  //! dot-notation path for unambiguous identification.
+${contentIndent}  struct ChangedField {
+${contentIndent}    ::FACE::STRING_TYPE  qualified_name;   //! e.g. "position.latitude"
+${contentIndent}    unsigned long        position_index;   //! zero-based, scoped to containing struct
+${contentIndent}  };
+
+${contentIndent}  //! Maximum number of leaf fields across any single entity type.
+${contentIndent}  const unsigned long MAX_FIELDS_PER_ENTITY = 64;
+
+${contentIndent}  //! Bounded sequence of ChangedField, ordered ascending by position_index.
+${contentIndent}  typedef sequence<ChangedField, MAX_FIELDS_PER_ENTITY> ChangedFieldList_Type;
+
+${contentIndent}  //! Reactor-to-subscriber event message on ER_NOTIFY_<N> connections.
+${contentIndent}  //! payload carries the full entity snapshot at the time of the event [ER-054].
+${contentIndent}  //! changed_fields is meaningful only for EVENT_UPDATED [ER-052].
+${contentIndent}  struct EntityEvent {
+${contentIndent}    EntityID_Type            entity_id;      //! Identifies the affected entity
+${contentIndent}    EntityTypeEnum           entity_type;    //! Type of the affected entity
+${contentIndent}    EventType                event_type;     //! What happened
+${contentIndent}    EntityPayload            payload;        //! Full entity snapshot
+${contentIndent}    ChangedFieldList_Type    changed_fields; //! Fields that changed (EVENT_UPDATED only)
+${contentIndent}    ::FACE::SYSTEM_TIME_TYPE timestamp;      //! Event timestamp, nanoseconds since epoch
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

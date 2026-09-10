@@ -1,0 +1,33 @@
+## macros.vm — Java language macro library
+## Loaded by Velocity before every Java template (macro_library: macros.vm in language.yaml).
+## Templates call these macros instead of the legacy $java.* helper methods.
+##
+## All macros are designed for inline expansion (no spurious leading/trailing whitespace).
+## Lines that produce output end with ## to suppress the trailing newline.
+
+## ---------------------------------------------------------------------------
+## getterName($n) — "getFoo" for member name "foo"
+## ---------------------------------------------------------------------------
+#macro(getterName $n)get${n.substring(0,1).toUpperCase()}${n.substring(1)}#end
+
+## ---------------------------------------------------------------------------
+## setterName($n) — "setFoo" for member name "foo"
+## ---------------------------------------------------------------------------
+#macro(setterName $n)set${n.substring(0,1).toUpperCase()}${n.substring(1)}#end
+
+## ---------------------------------------------------------------------------
+## paramDecl($param) — IDL parameter → Java parameter declaration
+##   in T              →  T name
+##   out/inout T (immutable)  →  us.opengroup.FACE.Holder<BoxedT> name
+##   out/inout T (mutable)    →  T name   (pass-by-ref semantics via the object)
+## Relies on $types.isImmutable() and $types.boxedType() driven by language.yaml.
+## ---------------------------------------------------------------------------
+#macro(paramDecl $param)
+#if($param.direction.toString() == "IN")
+$types.type($param.type) $param.name##
+#elseif($types.isImmutable($param.type))
+us.opengroup.FACE.Holder<$types.boxedType($param.type)> $param.name##
+#else
+us.opengroup.FACE.Holder<$types.type($param.type)> $param.name##
+#end
+#end

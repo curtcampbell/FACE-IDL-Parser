@@ -1,0 +1,52 @@
+## struct.hpp.vm
+## Generates one C++ header for an IDL struct declaration.
+##
+## Context:
+##   $struct     — StructNode
+##   $namespaces — List<String>  (module path segments, e.g. ["FACE","DM","SampleModel"])
+##   $includes   — List<String>  (local includes computed from field scoped-type refs)
+##   $types      — TypeResolver
+##
+#set($guard = "${types.guard($namespaces, $struct.name)}_HPP")
+#set($H = "#")
+${H}pragma once
+${H}ifndef ${guard}
+${H}define ${guard}
+
+\#include <FACE/Common.hpp>
+#foreach($inc in $includes)
+\#include "$inc"
+#end
+#if($struct.members.size() > 0 && $includes.size() == 0)
+
+#end
+
+#set($nsAction = "open")#parse("_namespaces.vm")
+
+## Struct declaration
+#if($struct.baseType.isPresent())
+struct ${struct.name} : public ${struct.baseType.get()} {
+#else
+struct ${struct.name} {
+#end
+
+## Member declarations
+#foreach($field in $struct.members)
+    $types.typeDecl($field.type, $field.name);
+#end
+
+    /// Default constructor — zero-initialises all scalar members.
+    ${struct.name}()
+#foreach($field in $struct.members)
+#if($foreach.first)
+        : ${field.name}($types.defaultInit($field.type))
+#else
+        , ${field.name}($types.defaultInit($field.type))
+#end
+#end
+    {}
+};
+
+#set($nsAction = "close")#parse("_namespaces.vm")
+
+${H}endif // ${guard}

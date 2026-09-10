@@ -1,0 +1,30 @@
+## EntityReactor_Types.vtl
+## Generates EntityReactor_Types.idl — umbrella include for all EntityReactor message types.
+## Content is fully static.
+##
+## Context: $model
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_ENTITYREACTOR_TYPES_IDL")
+//! Source file: ${model.sourcePathFor("EntityReactor_Types.idl")}
+//!
+//! Umbrella include — pulls in all EntityReactor message types.
+//! Include this file to get the complete set; include individual files
+//! directly when only a subset is needed.
+//!
+//!   EntityPayload.idl          — EntityTypeEnum, EntityPayload, EntityID_Type
+//!   EntityEvent.idl            — EventType, ChangedField, ChangedFieldList_Type, EntityEvent
+//!   EntityCrudRequest.idl      — CrudOperationType, EntityCrudRequest
+//!   EntityCrudResponse.idl     — EntityCrudResponse
+//!   SubscriptionRequest.idl    — AttributeValue, NotificationType, NotificationMode,
+//!                                MAX_CONDITIONS, MAX_VALUES, SubscriptionRequest
+//!   SubscriptionResponse.idl   — ValidationError, ValidationResult, SubscriptionResponse
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include "EntityEvent.idl"
+\#include "EntityCrudRequest.idl"
+\#include "EntityCrudResponse.idl"
+\#include "SubscriptionResponse.idl"
+
+#endif // ${guard}

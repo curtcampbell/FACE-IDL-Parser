@@ -1,0 +1,48 @@
+//! Source file: FACE/IOSS/MultiChannelDiscrete.idl
+
+#ifndef FACE_IOSS_MULTICHANNELDISCRETE
+#define FACE_IOSS_MULTICHANNELDISCRETE
+
+#include <FACE/IOSS/IOS.idl>
+
+module FACE {
+  module IOSS {
+
+    //! Declarations for the MultiChannelDiscrete I/O Service.
+    module MultiChannelDiscrete {
+      //! Declarations for the buffer that becomes part of the 'payload'
+      //! parameter for the IO_Service::Read and IO_Service::Write
+      //! operations.
+      
+      typedef unsigned long MULTICHANNEL_BUFFER_TYPE;
+      //! Number of bits in an IDL unsigned long; each bit is a channel
+      const unsigned short MAX_CHANNELS_PER_CONNECTION = 32;
+      struct ReadWriteBuffer {
+        MULTICHANNEL_BUFFER_TYPE discrete_channels;
+      };
+
+      //! Declarations for the defined configuration parameters of the
+      //! I/O Service. For each ID_PARAMETER_ID_TYPE, there is a comment
+      //! for the expected corresponding ID_PARAMETER_VALUE_TYPE.
+
+      //! Number of discrete inputs (<= MAX_CHANNELS_PER_CONNECTION)
+      const IO_PARAMETER_ID_TYPE NUM_INPUTS = 0; // FACE_UNSIGNEDSHORT
+      //! Number of discrete outputs (<= MAX_CHANNELS_PER_CONNECTION)
+      const IO_PARAMETER_ID_TYPE NUM_OUTPUTS = 1; // FACE_UNSIGNEDSHORT
+
+      //! Declarations for the defined bus status types for the I/O
+      //! Service.
+      //!
+      //! Note there are no defined bus status types for the
+      //! MultiChannelDiscrete I/O Service.
+    };
+
+    //! Instantiate the template module into the namespace for the I/O
+    //! Service. This results in fully-qualified types in that namespace
+    //! distinct to the I/O Service.
+    module IO_Service_Module<MultiChannelDiscrete::ReadWriteBuffer>
+      MultiChannelDiscrete;
+  };
+};
+
+#endif //! FACE_IOSS_MULTICHANNELDISCRETE

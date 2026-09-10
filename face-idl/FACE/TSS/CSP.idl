@@ -1,0 +1,88 @@
+//! Source file: FACE/TSS/CSP.idl
+
+#ifndef FACE_TSS_CSP
+#define FACE_TSS_CSP
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    module CSP {
+      
+      enum DATA_STORE_KIND_TYPE {
+        PRIVATE_DATA_STORE,
+        CHECKPOINT_DATA_STORE
+      };
+      
+      typedef long long DATA_STORE_TOKEN_TYPE;
+      
+      typedef long long DATA_ID_TYPE;     
+    
+        //! The CSP Interface
+      interface CSP {
+        
+        //! The Initialize(CSP) function call allows for the PCS, PSSS,
+        //! and TSSS UoC to trigger the initialization of the CSP
+        //! Interface.
+        void Initialize (
+          in  CONFIGURATION_RESOURCE configuration,
+          out RETURN_CODE_TYPE       return_code);
+
+        //! The Open(CSP) function allows the PCS or PSSS UoC to open
+        //! a data store that is associated with checkpoint or private
+        //! data. The data store is associated with a configuration name
+        //! and referenced by a token returned from the function.
+        void Open (
+          in  GUID_TYPE             uop_id,
+          in  STRING_TYPE           configuration_name,
+          in  DATA_STORE_KIND_TYPE  type,
+          out DATA_STORE_TOKEN_TYPE token,
+          out RETURN_CODE_TYPE      return_code);
+      
+        //! The Close(CSP) function allows the PCS or PSSS UoC to close
+        //! a data store.
+        void Close (
+          in  GUID_TYPE             uop_id,
+          in  DATA_STORE_TOKEN_TYPE token,
+          out RETURN_CODE_TYPE      return_code);
+
+        //! The Create(CSP) function allows the PCS or PSSS UoC to create
+        //! a data store entry.
+        void Create (
+          in  GUID_TYPE             uop_id,
+          in  DATA_STORE_TOKEN_TYPE token,
+          in  DATA_ID_TYPE          data_id,
+          in  DATA_BUFFER_TYPE      data,
+          out RETURN_CODE_TYPE      return_code);
+
+        //! The Read(CSP) function allows the PCS or PSSS UoC to read
+        //! a data store entry.
+        void Read (
+          in    GUID_TYPE             uop_id,
+          in    DATA_STORE_TOKEN_TYPE token,
+          in    DATA_ID_TYPE          data_id,
+          inout DATA_BUFFER_TYPE      data,
+          out   RETURN_CODE_TYPE      return_code);
+
+        //! The Update(CSP) function allows the PCS or PSSS UoC to update
+        //! a data store entry.
+        void Update (
+          in  GUID_TYPE             uop_id,
+          in  DATA_STORE_TOKEN_TYPE token,
+          in  DATA_ID_TYPE          data_id,
+          in  DATA_BUFFER_TYPE      data,
+          out RETURN_CODE_TYPE      return_code);
+
+        //! The Delete(CSP) function allows the PCS or PSSS UoC to delete
+        //! a data store entry.
+        void Delete (
+          in  GUID_TYPE             uop_id,
+          in  DATA_STORE_TOKEN_TYPE token,
+          in  DATA_ID_TYPE          data_id,
+          out RETURN_CODE_TYPE      return_code);
+      };
+    };
+  };
+};
+
+#endif //! FACE_TSS_CSP

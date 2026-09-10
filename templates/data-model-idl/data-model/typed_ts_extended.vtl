@@ -1,0 +1,56 @@
+## typed_ts_extended.vtl
+## Generates one Extended TypedTS IDL for a CLIENT_SERVER connection.
+## Conforms to FACE Technical Standard 3.2 §4.8.4.1 req 7:
+##   module name: FACE::TSS::<UOP_MODEL_NAME>::<REQ>_<RESP>::TypedTS
+##   output path: FACE/TSS/<UOP_MODEL_NAME>/<REQ>_<RESP>/TypedTS.idl
+## where UOP_MODEL_NAME is the root UoPModel that DEFINES the request datatype.
+## @foreach  uop_connection
+## @filename ${connTssModPath}/${reqName}_${respName}/TypedTS.idl
+##
+## Context (from IdlGeneratorPipeline.uoPConnectionContext()):
+##   $connTssModuleOpeners / $connTssModuleClosers / $connTssContentIndent
+##   $connTssModPath / $connTssGuardPrefix
+##   $connDmModPath     / $connDmPrefix      — request type's defining model
+##   $connRespDmModPath / $connRespDmPrefix  — response type's defining model
+##                                             (may differ from the request's)
+##
+## The <REQ>_<RESP> module level comes from the instantiation statement below.
+##
+## STANDARD connections are skipped via #stop; pipeline discards blank output.
+## NOTE: @filename references $respName — safe because @filename is evaluated only
+##       after confirming non-blank (i.e., non-skipped) output.
+##
+#if ($conn.typedTsVariant.name() != "EXTENDED")
+#stop
+#end
+#set ($reqName  = $conn.messageType.name)
+#set ($respName = $conn.responseMessageType.name)
+#set ($guard    = "${connTssGuardPrefix}_${reqName.toUpperCase()}_${respName.toUpperCase()}_TYPEDTS_IDL")
+//! Source file: ${connTssModPath}/${reqName}_${respName}/TypedTS.idl
+//!
+//! Extended TypedTS instantiation: ${reqName} / ${respName}
+//! FACE Technical Standard 3.2, §4.8.4.1 (Extended)
+//! UoP: ${uopName}  Connection: ${connName}  Kind: ${conn.kind}  Role: ${conn.role}
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/Extended.idl>
+\#include <${connDmModPath}/${reqName}.idl>
+\#include <${connRespDmModPath}/${respName}.idl>
+
+#foreach ($line in $connTssModuleOpeners)
+$line
+#end
+
+${connTssContentIndent}typedef ${connDmPrefix}${reqName}   ${reqName}_t;
+${connTssContentIndent}typedef ${connRespDmPrefix}${respName}  ${respName}_t;
+
+${connTssContentIndent}module ::FACE::TSS::Typed<${reqName}_t, ${respName}_t>
+${connTssContentIndent}    ${reqName}_${respName};
+
+#foreach ($line in $connTssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

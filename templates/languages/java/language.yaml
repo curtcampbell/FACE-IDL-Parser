@@ -1,0 +1,222 @@
+name: Java
+output_subdirectory: java
+
+# ── Macro library ─────────────────────────────────────────────────────────────
+# macros.vm is loaded as a global Velocity macro library before every template.
+macro_library: macros.vm
+
+# ── Package name computation ──────────────────────────────────────────────────
+# The engine computes $packageName from the module stack using these settings:
+#   package_separator: join character between segments
+#   package_case: "lower" → lowercase each segment, "preserve" → as-is in IDL
+package_separator: "."
+package_case: lower
+
+# ── Iteration strategy ────────────────────────────────────────────────────────
+iteration:
+  strategy: per_construct
+  # Module segments are lower-cased (§4.14.10.4); one public type per .java file.
+  path: "{modules:lower}/{name}.java"
+
+# ── Template routing ──────────────────────────────────────────────────────────
+templates:
+  struct:
+    template: struct.java.vm
+  enum:
+    template: enum.java.vm
+  interface:
+    template: interface.java.vm
+  template_inst:
+    template: template_inst.java.vm
+  union:
+    template: union.java.vm
+  const:
+    template: const.java.vm
+
+# ── Type maps (used by TypeResolver / $types) ─────────────────────────────────
+# FACE TS 3.2 §4.14.10 / Table 20
+primitive_types:
+  SHORT: short
+  LONG: int
+  LONG_LONG: long
+  UNSIGNED_SHORT: int
+  UNSIGNED_LONG: long
+  UNSIGNED_LONG_LONG: "java.math.BigInteger"
+  FLOAT: float
+  DOUBLE: double
+  LONG_DOUBLE: "java.math.BigDecimal"
+  CHAR: char
+  WIDE_CHAR: char
+  OCTET: byte
+  INT8: byte
+  UINT8: byte
+  INT16: int
+  UINT16: int
+  INT32: int
+  UINT32: long
+  INT64: long
+  UINT64: "java.math.BigInteger"
+  BOOLEAN: boolean
+  ANY: Object
+
+parameterized_types:
+  string: String
+  wstring: String
+  sequence: "java.util.List<{element:boxed}>"
+  array: "{element}[]"
+
+# FACE namespace typedef aliases → Java types
+scoped_overrides:
+  "::FACE::DURATION_TIME_TYPE": long
+  "FACE::DURATION_TIME_TYPE": long
+  "::FACE::ABSOLUTE_TIME_TYPE": long
+  "FACE::ABSOLUTE_TIME_TYPE": long
+  "::FACE::SYSTEM_TIME_TYPE": long
+  "FACE::SYSTEM_TIME_TYPE": long
+  "::FACE::TIMEOUT_TYPE": long
+  "FACE::TIMEOUT_TYPE": long
+  "::FACE::GUID_TYPE": long
+  "FACE::GUID_TYPE": long
+  "::FACE::TS_TYPE": long
+  "FACE::TS_TYPE": long
+  "::FACE::LongLong": long
+  "FACE::LongLong": long
+  "::FACE::UnsignedLong": long
+  "FACE::UnsignedLong": long
+  "::FACE::TRANSACTION_ID_TYPE": long
+  "FACE::TRANSACTION_ID_TYPE": long
+  "::FACE::SEQUENCE_NUMBER_TYPE": long
+  "FACE::SEQUENCE_NUMBER_TYPE": long
+  "::FACE::MESSAGE_INSTANCE_GUID_TYPE": long
+  "FACE::MESSAGE_INSTANCE_GUID_TYPE": long
+  "::FACE::Short": int
+  "FACE::Short": int
+  "::FACE::UnsignedShort": int
+  "FACE::UnsignedShort": int
+  "::FACE::Long": int
+  "FACE::Long": int
+  "::FACE::Float": float
+  "FACE::Float": float
+  "::FACE::Double": double
+  "FACE::Double": double
+  "::FACE::Boolean": boolean
+  "FACE::Boolean": boolean
+  "::FACE::Octet": byte
+  "FACE::Octet": byte
+  "::FACE::Char": char
+  "FACE::Char": char
+  "::FACE::WChar": char
+  "FACE::WChar": char
+  "::FACE::STRING_TYPE": String
+  "FACE::STRING_TYPE": String
+  "::FACE::WSTRING_TYPE": String
+  "FACE::WSTRING_TYPE": String
+  "::FACE::UNBOUNDED_STRING_TYPE": String
+  "FACE::UNBOUNDED_STRING_TYPE": String
+  "::FACE::LongDouble": "java.math.BigDecimal"
+  "FACE::LongDouble": "java.math.BigDecimal"
+
+# Types that are immutable in Java → require Holder<T> wrapping for out/inout params
+immutable_types:
+  - short
+  - int
+  - long
+  - float
+  - double
+  - boolean
+  - char
+  - byte
+  - String
+  - "java.math.BigInteger"
+  - "java.math.BigDecimal"
+
+# Primitive → wrapper class (for Holder<T> parameterisation and List<T> element types)
+boxed_types:
+  short: Short
+  int: Integer
+  long: Long
+  float: Float
+  double: Double
+  boolean: Boolean
+  char: Character
+  byte: Byte
+
+# ── Naming ────────────────────────────────────────────────────────────────────
+reserved_prefix: "FACE_"
+
+# Java keywords, boolean/null literals, and java.lang.Object method names (§4.14.10.1)
+reserved_words:
+  - abstract
+  - assert
+  - boolean
+  - break
+  - byte
+  - case
+  - catch
+  - char
+  - class
+  - const
+  - continue
+  - default
+  - do
+  - double
+  - else
+  - enum
+  - extends
+  - final
+  - finally
+  - float
+  - for
+  - goto
+  - if
+  - implements
+  - import
+  - instanceof
+  - int
+  - interface
+  - long
+  - native
+  - new
+  - package
+  - private
+  - protected
+  - public
+  - return
+  - short
+  - static
+  - strictfp
+  - super
+  - switch
+  - synchronized
+  - this
+  - throw
+  - throws
+  - transient
+  - try
+  - void
+  - volatile
+  - while
+  - "true"
+  - "false"
+  - "null"
+  - clone
+  - equals
+  - finalize
+  - getClass
+  - hashCode
+  - notify
+  - notifyAll
+  - toString
+  - wait
+
+# ── Static files (FACE framework support classes — §K.4) ──────────────────────
+static_files:
+  - template: Holder.java.vm
+    path: us/opengroup/FACE/Holder.java
+    skip_if_exists: true
+  - template: BAD_PARAM.java.vm
+    path: us/opengroup/FACE/BAD_PARAM.java
+    skip_if_exists: true
+  - template: DATA_CONVERSION.java.vm
+    path: us/opengroup/FACE/DATA_CONVERSION.java
+    skip_if_exists: true

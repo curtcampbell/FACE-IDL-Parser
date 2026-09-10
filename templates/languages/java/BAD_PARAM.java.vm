@@ -1,0 +1,13 @@
+package us.opengroup.FACE;
+
+/**
+ * Exception signalling that an invalid parameter was supplied.
+ *
+ * <p>FACE Technical Standard 3.2 §K.4.2
+ */
+public class BAD_PARAM extends Exception {
+
+    public BAD_PARAM() { super(""); }
+
+    public BAD_PARAM(String reason) { super(reason); }
+}

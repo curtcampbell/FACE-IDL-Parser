@@ -1,0 +1,128 @@
+//! Source file: FACE/TSS/TypeAbstraction.idl
+//! FACE Edition: 3.2
+
+#ifndef FACE_TSS_TYPEABSTRACTION
+#define FACE_TSS_TYPEABSTRACTION
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    module TypeAbstraction {
+  
+      //! The Read_Callback interface provides a callback prototype for the
+      //! TS Capability and is used to support receiving periodic data
+      //! without the TS Capability having to poll for data. If a callback
+      //! is used by the TS capability it is registered using the
+      //! Register_Callback.
+      interface Read_Callback {
+    
+        void Callback_Handler (
+          in  CONNECTION_ID_TYPE  connection_id, 
+          in  TRANSACTION_ID_TYPE transaction_id,
+          in  MESSAGE_TYPE        message,
+          in  HEADER_TYPE         header,
+          in  QoS_EVENT_TYPE      qos_parameters,
+          out RETURN_CODE_TYPE    return_code);
+      };
+
+      //! The Type Abstraction TA Interface
+      interface TypeAbstractionTS {
+       
+        //!  If the TS-TA Interface Adapter UoC sets the message’s GUID to 
+        //! CALLEE_PROVIDES_GUID on this connection, the TA UoC uses an 
+        //! internal value for GUID and provides the valid GUID value in 
+        //! message upon return from Receive_Message(). Otherwise, the TA 
+        //! UoC returns the message associated with the GUID 
+        //! value provided by the TS-TA adapter.
+
+        void Receive_Message (
+          in    CONNECTION_ID_TYPE  connection_id,
+          in    TIMEOUT_TYPE        timeout,
+          out   TRANSACTION_ID_TYPE transaction_id,
+          in    MESSAGE_SIZE_TYPE   size_limit,
+          inout MESSAGE_TYPE        message,
+          out   HEADER_TYPE         header,
+          out   QoS_EVENT_TYPE      qos_parameters,
+          out   RETURN_CODE_TYPE    return_code);
+     
+        //! If the TS-TA Interface Adapter UoC sets the message’s GUID to 
+        //! CALLEE_PROVIDES_GUID on this connection, then the TA UoC uses 
+        //! an internal value for GUID to associate with the 
+        //! message to send; else the TA UoC associates the provided 
+        //! GUID with the message to send.
+
+        void Send_Message (
+          in    CONNECTION_ID_TYPE  connection_id,
+          in    TIMEOUT_TYPE        timeout,
+          inout TRANSACTION_ID_TYPE transaction_id,
+          in    MESSAGE_TYPE        message,
+          out   MESSAGE_SIZE_TYPE   size_sent,
+          out   RETURN_CODE_TYPE    return_code);
+
+        //! If the TS-TA Interface Adapter UoC sets the message’s GUID to 
+        //! CALLEE_PROVIDES_GUID,
+	      //! then the TA UoC uses an internal value for GUID to associate 
+        //! with the message to send; else the TA UoC associates the provided 
+        //! GUID value with the message to send.       
+
+        //! If the TS-TA Interface Adapter UoC sets the return_data’s GUID to 
+        //! CALLEE_PROVIDES_GUID, then the TA UoC uses an internal value for  
+        //! return_data GUID and provides the internal GUID value
+        //! upon return; else the TA UoC uses the provided
+        //! GUID value within the return_data.
+
+        void Send_Message_Blocking (
+          in    CONNECTION_ID_TYPE connection_id,
+          in    TIMEOUT_TYPE       timeout,
+          in    MESSAGE_SIZE_TYPE  size_limit,
+          in    MESSAGE_TYPE       message,
+          out   MESSAGE_SIZE_TYPE  size_sent,
+          out   HEADER_TYPE        header,
+          out   QoS_EVENT_TYPE     qos_parameters,
+          inout MESSAGE_TYPE       return_data,
+          out   RETURN_CODE_TYPE   return_code);
+              
+        //! Note: The callback parameter is semantically an in parameter
+        //!       but is inout to avoid an undesirable mapping in C++.
+        
+        //! If the TS-TA Interface Adapter UoC sets the message’s GUID to 
+        //! CALLEE_PROVIDES_GUID, then the TA UoC uses an internal value for 
+        //! GUID to associate with the message to send; else the  
+        //! TA UoC associates the provided GUID with the message to send.
+  	    //! The GUID of the response message returned in the callback uses an
+	      //! internal TA’s value for GUID.
+
+        void Send_Message_Async (
+          in    CONNECTION_ID_TYPE  connection_id,
+          in    TIMEOUT_TYPE        timeout,
+          inout TRANSACTION_ID_TYPE transaction_id,
+          in    MESSAGE_TYPE        message,
+          inout Read_Callback       callback,
+          out   MESSAGE_SIZE_TYPE   size_sent,
+          out   RETURN_CODE_TYPE    return_code);
+        
+        //! The purpose of Register_Callback(TA) is to provide a mechanism
+        //! to read data without polling. This is used for
+        //! publish/subscribe transportation mechanisms.
+        //!
+        //! Note: message_guid = CALLEE_PROVIDES_GUID indicates the TS-TA
+        //!       does not provide GUIDs but expects the TA to source GUIDs.
+        void Register_Callback (
+          in    CONNECTION_ID_TYPE connection_id,
+          inout Read_Callback      data_callback,
+          in    MESSAGE_SIZE_TYPE  max_message_size,
+          in    MESSAGE_GUID_TYPE  message_guid,
+          out   RETURN_CODE_TYPE   return_code);
+      
+        //! The purpose of Unregister_Callback(TA) is to unregister a callback.
+        void Unregister_Callback (
+        	in  CONNECTION_ID_TYPE connection_id,
+        	out RETURN_CODE_TYPE   return_code);
+
+      };
+    };
+  };
+};
+
+#endif //! FACE_TSS_TYPEABSTRACTION

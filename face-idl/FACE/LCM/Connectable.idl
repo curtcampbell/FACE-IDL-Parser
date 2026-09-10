@@ -1,0 +1,45 @@
+//! Source file: FACE/LCM/Connectable.idl
+
+#ifndef FACE_LCM_CONNECTABLE
+#define FACE_LCM_CONNECTABLE
+
+#include <FACE/Common.idl>
+
+module FACE {
+  module LCM {
+
+  //! FACE does not define an interface to create or destroy instances. The
+  //! IDL language bindings address the syntax for those operations. The
+  //! LCM Interface assumes an existent software object that implements
+  //! one or more of the interfaces defined.
+
+  //! The Connectable module corresponds to the Connectable Capability.
+    module Connectable {
+      interface ConnectableInstance {
+
+        //! The Framework_Connect(LCM::Connectable) operation is called by
+        //! a Component Framework at the point during framework startup
+        //! when the instance is being connected. It provides the instance
+        //! an opportunity to perform appropriate behaviors at that point
+        //! in its life-cycle. The caller determines whether the operation
+        //! is invoked before or after the connection is completed.
+        void Framework_Connect(
+          in CONFIGURATION_RESOURCE     configuration,
+          out RETURN_CODE_TYPE          return_code);
+
+        //! The Framework_Disconnect(LCM::Connectable) operation is called
+        //! by a Component Framework at the point during framework teardown
+        //! when the instance is being disconnected. It provides the
+        //! instance an opportunity to perform appropriate behaviors at
+        //! that point in its life-cycle. The caller determines whether the
+        //! operation is invoked before or after the disconnection is
+        //! completed.
+        void Framework_Disconnect(
+          out RETURN_CODE_TYPE          return_code);
+
+      }; // interface ConnectableInstance
+    }; // module Connectable
+  };
+};
+
+#endif //! FACE_LCM_CONNECTABLE

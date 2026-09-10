@@ -1,0 +1,49 @@
+## EntityCrudRequest.vtl
+## Generates EntityCrudRequest.idl — CrudOperationType enum + EntityCrudRequest struct.
+## Content is effectively static; module nesting and guard come from $model.
+##
+## Context: $model, $moduleOpeners, $moduleClosers, $contentIndent
+##
+#set ($guard = "${model.idlModuleGuardPrefix}_ENTITYCRUDREQUEST_IDL")
+//! Source file: ${model.sourcePathFor("EntityCrudRequest.idl")}
+//!
+//! Client-to-Reactor message on the ER_CRUD connection.
+//! Carries the CRUD operation type, the target entity ID, and optional payload.
+//!
+//! Supporting types defined here (exclusively consumed by EntityCrudRequest):
+//!   CrudOperationType — discriminant for the requested CRUD operation
+//!
+//! Dependencies (via EntityPayload.idl):
+//!   EntityID_Type, EntityPayload
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Common.idl>
+\#include "EntityPayload.idl"
+
+#foreach ($line in $moduleOpeners)
+$line
+#end
+
+${contentIndent}  //! Identifies the CRUD operation requested by a client.
+${contentIndent}  enum CrudOperationType {
+${contentIndent}    CRUD_CREATE,    //! Create a new entity; Reactor assigns EntityID.
+${contentIndent}    CRUD_READ,      //! Read current state of entity by EntityID.
+${contentIndent}    CRUD_UPDATE,    //! Update fields of an owned entity.
+${contentIndent}    CRUD_DELETE     //! Delete an owned entity.
+${contentIndent}  };
+
+${contentIndent}  //! Client-to-Reactor message on the ER_CRUD connection.
+${contentIndent}  //! payload is required for CRUD_CREATE and CRUD_UPDATE [ERS 6.6.1].
+${contentIndent}  struct EntityCrudRequest {
+${contentIndent}    CrudOperationType  operation;   //! Operation to perform
+${contentIndent}    EntityID_Type      entity_id;   //! Zero on CRUD_CREATE; Reactor assigns on return
+${contentIndent}    EntityPayload      payload;      //! Entity data; required for CREATE and UPDATE
+${contentIndent}  };
+
+#foreach ($line in $moduleClosers)
+$line
+#end
+
+#endif // ${guard}

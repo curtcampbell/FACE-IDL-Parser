@@ -1,0 +1,37 @@
+//! Source file: FACE/TSS/Base.idl
+//! FACE Edition: 3.2
+
+#ifndef FACE_TSS_BASE
+#define FACE_TSS_BASE
+
+#include <FACE/TSS/Common.idl>
+
+module FACE {
+  module TSS {
+    //! Base interface provides the common TSS functions 
+    interface Base {
+      //! The Initialize(Base) function call allows for the PCS and PSSS
+      //! UoC to trigger the initialization of the TS Interface.
+      void Initialize (
+        in  CONFIGURATION_RESOURCE configuration,
+        out RETURN_CODE_TYPE       return_code);
+
+      //! The TSS provides an interface to create a connection. This
+      //! interface allows the use of DDS, CORBA, ARINC 653, and POSIX
+      //! connections.
+      void Create_Connection (
+        in  CONNECTION_NAME_TYPE connection_name,
+        in  TIMEOUT_TYPE         timeout,
+        out CONNECTION_ID_TYPE connection_id,
+        out MESSAGE_SIZE_TYPE  max_message_size,
+        out RETURN_CODE_TYPE   return_code);  
+
+      void Destroy_Connection (
+        in  CONNECTION_ID_TYPE connection_id,
+        out RETURN_CODE_TYPE   return_code);
+      
+    };
+  };
+};
+
+#endif //! FACE_TSS_BASE

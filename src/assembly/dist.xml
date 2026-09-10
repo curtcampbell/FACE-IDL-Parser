@@ -1,0 +1,74 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0
+                              https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <!--
+        Produces:
+          face-idl-tools-<version>-dist.zip
+            lib/face-idl-gen-<version>.jar           (IDL generator fat JAR)
+            lib/face-idl-binder-<version>.jar        (IDL binder fat JAR)
+            templates/entity-reactor-idl/**          (Entity Reactor IDL Velocity templates)
+            templates/data-model-idl/**              (TSS data-model IDL Velocity templates)
+            templates/languages/**                   (language-binding Velocity templates)
+            face-idl/**                              (FACE framework IDL files)
+            bin/face-idl-gen.bat                     (Windows launcher — IDL generator)
+            bin/face-idl-binder.bat                  (Windows launcher — IDL binder)
+
+        Install by unzipping anywhere; launchers resolve all paths relative to the
+        installation root so templates and face-idl are always found automatically.
+    -->
+
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <!-- Shaded JARs (built by maven-shade-plugin into target/) -->
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>face-idl-gen-*.jar</include>
+                <include>face-idl-binder-*.jar</include>
+            </includes>
+            <filtered>false</filtered>
+        </fileSet>
+
+        <!-- External templates (IDL + language bindings) -->
+        <fileSet>
+            <directory>templates</directory>
+            <outputDirectory>templates</outputDirectory>
+            <includes>
+                <include>entity-reactor-idl/**</include>
+                <include>data-model-idl/**</include>
+                <include>languages/**</include>
+            </includes>
+            <filtered>false</filtered>
+        </fileSet>
+
+        <!-- FACE framework IDL files (TypedTS, Extended, Injectable, Common) -->
+        <fileSet>
+            <directory>face-idl</directory>
+            <outputDirectory>face-idl</outputDirectory>
+            <includes>
+                <include>**/*.idl</include>
+            </includes>
+            <filtered>false</filtered>
+        </fileSet>
+
+        <!-- Windows batch launchers -->
+        <fileSet>
+            <directory>src/assembly/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+            </includes>
+            <filtered>false</filtered>
+        </fileSet>
+    </fileSets>
+
+</assembly>
