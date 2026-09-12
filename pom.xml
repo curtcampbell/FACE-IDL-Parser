@@ -104,6 +104,11 @@
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
+                <!-- Filtered so face-idl-tools-version.properties carries the
+                     built ${project.version}.  Deliberately NOT applied to the
+                     templates/languages resource root above: Velocity uses the
+                     same ${...} syntax and must not be filtered. -->
+                <filtering>true</filtering>
             </resource>
         </resources>
 
@@ -176,6 +181,10 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.warhex.er.generator.FaceIdlGen</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -201,6 +210,10 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.warhex.er.generator.FaceCodeGen</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -226,6 +239,10 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.warhex.er.generator.FaceIdlBinder</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -234,19 +251,22 @@
                 </executions>
             </plugin>
 
-            <!-- Assembly — produce a distribution ZIP:
-                   face-idl-tools-<version>-dist.zip
-                     lib/face-idl-gen-<version>.jar
-                     lib/face-idl-binder-<version>.jar
-                     templates/entity-reactor-idl/**   (Entity Reactor IDL templates)
-                     templates/data-model-idl/**        (TSS data-model IDL templates)
-                     bin/face-idl-gen.bat
-                     bin/face-idl-binder.bat
-                 Run with: mvn package assembly:single -->
+            <!-- Assembly: produce the installable distribution ZIP described in
+                 src/assembly/dist.xml.  Bound to the package phase and declared
+                 after the shade plugin, so `mvn clean package` produces
+                 target/face-idl-tools-<version>-dist.zip with all three shaded
+                 jars already present in target/. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
+                <executions>
+                    <execution>
+                        <id>make-distribution</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <descriptors>
                         <descriptor>src/assembly/dist.xml</descriptor>

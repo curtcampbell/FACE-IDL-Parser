@@ -9,41 +9,57 @@
     </formats>
 
     <!--
-        Produces:
-          face-idl-tools-<version>-dist.zip
-            lib/face-idl-gen-<version>.jar           (IDL generator fat JAR)
-            lib/face-idl-binder-<version>.jar        (IDL binder fat JAR)
-            templates/entity-reactor-idl/**          (Entity Reactor IDL Velocity templates)
-            templates/data-model-idl/**              (TSS data-model IDL Velocity templates)
-            templates/languages/**                   (language-binding Velocity templates)
-            face-idl/**                              (FACE framework IDL files)
-            bin/face-idl-gen.bat                     (Windows launcher — IDL generator)
-            bin/face-idl-binder.bat                  (Windows launcher — IDL binder)
+        Produces the installable FACE IDL toolchain:
 
-        Install by unzipping anywhere; launchers resolve all paths relative to the
-        installation root so templates and face-idl are always found automatically.
+          face-idl-tools-<version>-dist.zip
+            face-idl-tools-<version>/
+              bin/face-idl-gen      bin/face-idl-gen.bat
+              bin/face-codegen      bin/face-codegen.bat
+              bin/face-idl-binder   bin/face-idl-binder.bat
+              lib/face-idl-gen-<version>.jar
+              lib/face-codegen-<version>.jar
+              lib/face-idl-binder-<version>.jar
+              templates/data-model-idl/**     (TSS data-model IDL templates)
+              templates/languages/**          (language-binding templates + language.yaml)
+              face-idl/**                     (authoritative FACE framework IDL)
+              conf/logging.properties
+              VERSION
+
+        Install by unzipping anywhere.  Every launcher resolves the install root
+        from its own location, so no path is baked in and no environment
+        variable is required to run the tools.  Downstream build systems point
+        FACE_IDL_TOOLS_HOME at the unzipped root to locate bin/ and face-idl/.
+
+        SCOPE: this distribution ships only what the FACE Technical Standard
+        defines: the framework IDL, the data-model IDL templates (J.8 and
+        4.8.4.1), and the IDL-to-language binding templates (4.14 and J.8).
+        Project-specific template sets are supplied by consumers through the
+        template directory option and are deliberately NOT packaged here.
     -->
 
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <includeBaseDirectory>true</includeBaseDirectory>
 
-    <!-- Shaded JARs (built by maven-shade-plugin into target/) -->
     <fileSets>
+
+        <!-- Shaded runnable JARs (built by maven-shade-plugin into target/) -->
         <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory>lib</outputDirectory>
             <includes>
                 <include>face-idl-gen-*.jar</include>
+                <include>face-codegen-*.jar</include>
                 <include>face-idl-binder-*.jar</include>
             </includes>
             <filtered>false</filtered>
         </fileSet>
 
-        <!-- External templates (IDL + language bindings) -->
+        <!-- Standard template sets: data-model IDL and language bindings.
+             entity-reactor-idl is intentionally excluded: Entity Reactor is a
+             transport service built with this tool, not part of the tool. -->
         <fileSet>
             <directory>templates</directory>
             <outputDirectory>templates</outputDirectory>
             <includes>
-                <include>entity-reactor-idl/**</include>
                 <include>data-model-idl/**</include>
                 <include>languages/**</include>
             </includes>
@@ -60,15 +76,63 @@
             <filtered>false</filtered>
         </fileSet>
 
-        <!-- Windows batch launchers -->
+        <!-- POSIX launchers.  lineEnding=unix is not cosmetic: if a developer
+             checks the repository out with core.autocrlf=true, these files carry
+             CRLF in the working tree and the shebang becomes "/bin/sh\r", which
+             the kernel reports as a missing interpreter.  Forcing LF here means
+             the published zip is correct no matter how it was built.
+             0755 so the scripts are executable straight out of the zip. -->
+        <fileSet>
+            <directory>src/assembly/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>face-idl-gen</include>
+                <include>face-codegen</include>
+                <include>face-idl-binder</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+            <filtered>false</filtered>
+        </fileSet>
+
+        <!-- Windows launchers, pinned to CRLF for the same reason in reverse:
+             cmd.exe mishandles LF-only batch files around labels and goto. -->
         <fileSet>
             <directory>src/assembly/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.bat</include>
             </includes>
+            <fileMode>0755</fileMode>
+            <lineEnding>dos</lineEnding>
             <filtered>false</filtered>
         </fileSet>
+
     </fileSets>
+
+    <files>
+
+        <!-- Tool configuration.  Single source of truth: the repo-root file is
+             also used by the dev-tree launchers in scripts/dev/. -->
+        <file>
+            <source>logging.properties</source>
+            <outputDirectory>conf</outputDirectory>
+            <destName>logging.properties</destName>
+            <fileMode>0644</fileMode>
+            <filtered>false</filtered>
+        </file>
+
+        <!-- Version marker: carries the same value the CLIs report for their
+             version flag, so a consumer can assert a pinned toolchain version
+             without running Java. -->
+        <file>
+            <source>src/assembly/VERSION</source>
+            <outputDirectory>.</outputDirectory>
+            <destName>VERSION</destName>
+            <fileMode>0644</fileMode>
+            <filtered>true</filtered>
+        </file>
+
+    </files>
 
 </assembly>

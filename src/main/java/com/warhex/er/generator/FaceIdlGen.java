@@ -48,7 +48,7 @@ import java.util.logging.Logger;
     name        = "face-idl-gen",
     description = "FACE IDL generator — converts entity models to IDL artifacts.",
     mixinStandardHelpOptions = true,
-    version     = "0.1.0-SNAPSHOT",
+    versionProvider = ToolVersionProvider.class,
     subcommands = {
         FaceIdlGen.GenerateIdlCommand.class,
         FaceIdlGen.GenerateTssIdlCommand.class,

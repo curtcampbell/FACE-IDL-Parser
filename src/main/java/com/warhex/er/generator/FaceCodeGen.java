@@ -53,7 +53,7 @@ import java.util.logging.Logger;
     name        = "face-codegen",
     description = "FACE code generator — generates implementation code from IDL and templates.",
     mixinStandardHelpOptions = true,
-    version     = "0.1.0-SNAPSHOT",
+    versionProvider = ToolVersionProvider.class,
     subcommands = {
         FaceCodeGen.GenerateCommand.class,
         CommandLine.HelpCommand.class

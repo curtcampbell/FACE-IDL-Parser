@@ -36,7 +36,7 @@ import java.util.logging.Logger;
     name        = "face-idl-binder",
     description = "FACE IDL binder — generates language bindings from IDL.",
     mixinStandardHelpOptions = true,
-    version     = "0.1.0-SNAPSHOT",
+    versionProvider = ToolVersionProvider.class,
     subcommands = {
         FaceIdlBinder.BindCommand.class,
         CommandLine.HelpCommand.class

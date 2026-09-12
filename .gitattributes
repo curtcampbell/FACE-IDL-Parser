@@ -1,0 +1,31 @@
+# Line-ending policy.
+#
+# Git for Windows defaults to core.autocrlf=true, which rewrites LF to CRLF in
+# the working tree on checkout.  For shell scripts that is fatal: the kernel
+# reads the shebang literally and reports
+#     /bin/sh^M: bad interpreter: No such file or directory
+# under WSL, Linux and macOS.  The rules below pin line endings per file type
+# so the checkout is correct regardless of a developer's git configuration.
+
+# Default: let git normalise text files to LF in the repository.
+* text=auto
+
+# Extensionless POSIX launchers -- must be LF in the working tree, always.
+src/assembly/bin/face-idl-gen      text eol=lf
+src/assembly/bin/face-codegen      text eol=lf
+src/assembly/bin/face-idl-binder   text eol=lf
+scripts/dev/face-idl-gen           text eol=lf
+scripts/dev/face-codegen           text eol=lf
+
+# Any future shell script.
+*.sh                               text eol=lf
+
+# Windows batch files want CRLF; cmd.exe mishandles LF around labels and goto.
+*.bat                              text eol=crlf
+*.cmd                              text eol=crlf
+
+# Binary: never touch.
+*.jar    binary
+*.zip    binary
+*.docx   binary
+*.pdf    binary

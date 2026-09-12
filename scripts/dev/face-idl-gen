@@ -1,0 +1,44 @@
+#!/bin/sh
+# face-idl-gen -- DEV launcher: runs the tool straight out of the build tree.
+#
+# Not part of the distribution.  Expects `mvn package` to have produced
+# target/face-idl-gen-<version>.jar.  For an installed toolchain use the
+# launcher in <install-root>/bin instead.
+
+set -u
+
+# Follow symlinks so the launcher still finds the install root when it has
+# been symlinked onto PATH (e.g. /usr/local/bin/face-codegen).
+SCRIPT=$0
+_hops=0
+while [ -h "$SCRIPT" ]; do
+    _hops=$((_hops + 1))
+    if [ "$_hops" -gt 40 ]; then
+        echo "ERROR: symlink loop while resolving $0" >&2
+        exit 1
+    fi
+    _dir=$(CDPATH= cd -- "$(dirname -- "$SCRIPT")" && pwd -P)
+    _link=$(readlink -- "$SCRIPT")
+    case $_link in
+        /*) SCRIPT=$_link ;;
+        *)  SCRIPT=$_dir/$_link ;;
+    esac
+done
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT")" && pwd -P)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd -P)
+
+JAR=""
+for candidate in "$REPO_ROOT"/target/face-idl-gen-*.jar; do
+    [ -e "$candidate" ] || continue
+    JAR="$candidate"
+    break
+done
+
+if [ -z "$JAR" ]; then
+    echo "ERROR: no face-idl-gen jar in $REPO_ROOT/target/ -- run 'mvn package' first." >&2
+    exit 1
+fi
+
+exec java -Djava.util.logging.config.file="$REPO_ROOT/logging.properties" \
+          -jar "$JAR" "$@"

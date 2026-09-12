@@ -1,24 +1,46 @@
 @echo off
-:: face-idl-gen.bat — Windows launcher for the FACE IDL Generator
+:: face-idl-gen.bat -- Windows launcher for the FACE IDL tools.
 ::
 :: Layout expected (relative to this script):
 ::   ..\lib\face-idl-gen-*.jar
-::   ..\templates\            (IDL template roots)
-::   ..\face-idl\             (FACE framework IDL files)
+::   ..\templates\           (Velocity template roots)
+::   ..\face-idl\            (FACE framework IDL files)
+::   ..\conf\logging.properties
+::
+:: Resolves the install root from this script's own location, so the
+:: distribution can be unzipped anywhere.
 
 setlocal
 
-:: Resolve install root from this script's location
-set "FACE_IDL_GEN_HOME=%~dp0.."
+set "INSTALL_ROOT=%~dp0.."
 
-:: Find the fat JAR (there should be exactly one)
-for %%F in ("%FACE_IDL_GEN_HOME%\lib\face-idl-gen-*.jar") do set "FACE_JAR=%%F"
+:: Locate the fat JAR by glob -- never by a hardcoded version.
+set "FACE_JAR="
+for %%F in ("%INSTALL_ROOT%\lib\face-idl-gen-*.jar") do set "FACE_JAR=%%F"
 
 if not defined FACE_JAR (
-    echo ERROR: could not locate face-idl-gen jar in %FACE_IDL_GEN_HOME%\lib\
+    echo ERROR: could not locate face-idl-gen jar in %INSTALL_ROOT%\lib\ 1>&2
+    endlocal
     exit /b 1
 )
 
-java -jar "%FACE_JAR%" %*
+if defined JAVA_HOME (
+    set "JAVA_EXE=%JAVA_HOME%\bin\java.exe"
+) else (
+    set "JAVA_EXE=java"
+)
 
-endlocal
+:: Logging configuration; override with FACE_IDL_TOOLS_LOGGING.
+if defined FACE_IDL_TOOLS_LOGGING (
+    set "LOG_CONF=%FACE_IDL_TOOLS_LOGGING%"
+) else (
+    set "LOG_CONF=%INSTALL_ROOT%\conf\logging.properties"
+)
+
+if exist "%LOG_CONF%" (
+    "%JAVA_EXE%" -Djava.util.logging.config.file="%LOG_CONF%" -jar "%FACE_JAR%" %*
+) else (
+    "%JAVA_EXE%" -jar "%FACE_JAR%" %*
+)
+
+endlocal & exit /b %ERRORLEVEL%

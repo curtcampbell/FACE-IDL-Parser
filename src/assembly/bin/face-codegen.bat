@@ -1,8 +1,8 @@
 @echo off
-:: face-idl-binder.bat -- Windows launcher for the FACE IDL tools.
+:: face-codegen.bat -- Windows launcher for the FACE IDL tools.
 ::
 :: Layout expected (relative to this script):
-::   ..\lib\face-idl-binder-*.jar
+::   ..\lib\face-codegen-*.jar
 ::   ..\templates\           (Velocity template roots)
 ::   ..\face-idl\            (FACE framework IDL files)
 ::   ..\conf\logging.properties
@@ -16,10 +16,10 @@ set "INSTALL_ROOT=%~dp0.."
 
 :: Locate the fat JAR by glob -- never by a hardcoded version.
 set "FACE_JAR="
-for %%F in ("%INSTALL_ROOT%\lib\face-idl-binder-*.jar") do set "FACE_JAR=%%F"
+for %%F in ("%INSTALL_ROOT%\lib\face-codegen-*.jar") do set "FACE_JAR=%%F"
 
 if not defined FACE_JAR (
-    echo ERROR: could not locate face-idl-binder jar in %INSTALL_ROOT%\lib\ 1>&2
+    echo ERROR: could not locate face-codegen jar in %INSTALL_ROOT%\lib\ 1>&2
     endlocal
     exit /b 1
 )

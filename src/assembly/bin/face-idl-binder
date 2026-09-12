@@ -1,0 +1,62 @@
+#!/bin/sh
+# face-idl-binder -- POSIX launcher for the FACE IDL tools.
+#
+# Layout expected (relative to this script):
+#   ../lib/face-idl-binder-*.jar
+#   ../templates/            (Velocity template roots)
+#   ../face-idl/             (FACE framework IDL files)
+#   ../conf/logging.properties
+#
+# Resolves the install root from this script's own location, so the
+# distribution can be unzipped anywhere.
+
+set -u
+
+# Follow symlinks so the launcher still finds the install root when it has
+# been symlinked onto PATH (e.g. /usr/local/bin/face-codegen).
+SCRIPT=$0
+_hops=0
+while [ -h "$SCRIPT" ]; do
+    _hops=$((_hops + 1))
+    if [ "$_hops" -gt 40 ]; then
+        echo "ERROR: symlink loop while resolving $0" >&2
+        exit 1
+    fi
+    _dir=$(CDPATH= cd -- "$(dirname -- "$SCRIPT")" && pwd -P)
+    _link=$(readlink -- "$SCRIPT")
+    case $_link in
+        /*) SCRIPT=$_link ;;
+        *)  SCRIPT=$_dir/$_link ;;
+    esac
+done
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT")" && pwd -P)
+INSTALL_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+
+# Locate the fat JAR by glob -- never by a hardcoded version.
+JAR=""
+for candidate in "$INSTALL_ROOT"/lib/face-idl-binder-*.jar; do
+    [ -e "$candidate" ] || continue
+    JAR="$candidate"
+    break
+done
+
+if [ -z "$JAR" ]; then
+    echo "ERROR: could not locate face-idl-binder jar in $INSTALL_ROOT/lib/" >&2
+    exit 1
+fi
+
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+    JAVA="$JAVA_HOME/bin/java"
+else
+    JAVA=java
+fi
+
+# Logging configuration; override with FACE_IDL_TOOLS_LOGGING.
+LOG_CONF="${FACE_IDL_TOOLS_LOGGING:-$INSTALL_ROOT/conf/logging.properties}"
+
+if [ -f "$LOG_CONF" ]; then
+    exec "$JAVA" -Djava.util.logging.config.file="$LOG_CONF" -jar "$JAR" "$@"
+else
+    exec "$JAVA" -jar "$JAR" "$@"
+fi
