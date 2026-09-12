@@ -232,6 +232,53 @@ class FaceTssReaderTest {
     // Helpers
     // -----------------------------------------------------------------------
 
+    // -----------------------------------------------------------------------
+    // Multi-model defining-module resolution (issue #1 / #3 regression fixture)
+    //
+    // FACE Technical Standard 3.2 §J.8: a Template's IDL module is named after
+    // the root UoPModel in which it is a member, not the first UoPModel in the
+    // document. examples/GROCERY_with_IM.face has nine root uop:UoPModel
+    // elements; asserting the same per-type expectations against both read()
+    // and readAll() is the pairing that would have caught the original bug,
+    // where read() stamped every type with the first UoPModel's namespace.
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("read() and readAll() agree on each type's defining module (multi-model)")
+    void readAndReadAllAgreeOnDefiningModule() throws Exception {
+        Path groceryFile = Paths.get("examples/GROCERY_with_IM.face");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                java.nio.file.Files.exists(groceryFile),
+                "Skipping — examples/GROCERY_with_IM.face not found");
+
+        Map<String, String> expected = Map.of(
+                "Promotion",           "FACE.DM.CORE_Templates",
+                "Product",             "FACE.DM.InventoryGateway_Templates",
+                "LoyaltyAccount_Entity", "FACE.DM.CustomerGateway_Templates",
+                "PurchaseOrder",       "FACE.DM.SupplierGateway_Templates"
+        );
+
+        UoPModelData readResult = new FaceTssReader().read(groceryFile);
+        Map<String, String> readModuleByName = readResult.getPlatformTypes().stream()
+                .collect(Collectors.toMap(TssTypeData::getName, TssTypeData::getIdlModule,
+                        (a, b) -> a));
+
+        List<UoPModelData> readAllResult = new FaceTssReader().readAll(groceryFile);
+        Map<String, String> readAllModuleByName = readAllResult.stream()
+                .flatMap(m -> m.getPlatformTypes().stream())
+                .collect(Collectors.toMap(TssTypeData::getName, TssTypeData::getIdlModule,
+                        (a, b) -> a));
+
+        for (Map.Entry<String, String> e : expected.entrySet()) {
+            String typeName = e.getKey();
+            String expectedModule = e.getValue();
+            assertEquals(expectedModule, readModuleByName.get(typeName),
+                    "read(): " + typeName + " should be defined in " + expectedModule);
+            assertEquals(expectedModule, readAllModuleByName.get(typeName),
+                    "readAll(): " + typeName + " should be defined in " + expectedModule);
+        }
+    }
+
     private static Map<String, TssTypeData> byName(List<TssTypeData> types) {
         return types.stream().collect(Collectors.toMap(TssTypeData::getName, t -> t));
     }

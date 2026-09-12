@@ -119,6 +119,15 @@ public class FaceTssReader {
         // Pass 2: resolve fields for each type
         resolveAllTemplateFields(root);
 
+        // Pass 2b: stamp every registered Template / CompositeTemplate with the root
+        // uop:UoPModel that DEFINES it (FACE Technical Standard 3.2 §J.8). Mirrors
+        // readAll()'s ordering so single- and multi-model input resolve identically.
+        stampDefiningUoPModels(root);
+
+        // Pass 2c: rewrite template-to-template field references now that every type
+        // knows its defining module (§J.8 inter-Model type references).
+        resolveInterModelTemplateReferences();
+
         // Phase C: collect UoP components and their connections
         List<UoPData> uoPs = new ArrayList<>();
         collectUoPs(root, uoPs);
