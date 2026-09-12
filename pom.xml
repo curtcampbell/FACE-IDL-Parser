@@ -7,7 +7,7 @@
 
     <groupId>com.warhex</groupId>
     <artifactId>face-idl-tools</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>FACE IDL Tools</name>
