@@ -100,6 +100,42 @@ public class LanguageDescriptor {
      */
     public Map<String, String> scoped_overrides;
 
+    /**
+     * When {@code true}, a scoped reference to a typedef whose underlying type
+     * is non-Scoped (primitive/string/sequence/array — e.g. {@code typedef
+     * sequence<QoS_Element> QoS_EVENT_TYPE;}) is rendered using the typedef's
+     * own name, not expanded to its underlying type's structural form. This
+     * matches FACE TS 3.2 Table 14's own example ({@code typedef long MyLong;
+     * struct A { MyLong Y; };} maps {@code Y} to {@code MyLong}, not
+     * {@code FACE::Long}) and is required whenever the language actually
+     * declares/emits the typedef somewhere (so the preserved name resolves).
+     *
+     * <p>Defaults to {@code false} (expand to the underlying type), which is
+     * required for any language whose {@code templates} map has no
+     * {@code typedef} entry — such a language never emits the typedef
+     * declaration itself, so preserving its name would produce a reference to
+     * something that doesn't exist. Only enable this for a language that
+     * renders typedefs (C++'s {@code per_idl_file} strategy does, per the
+     * {@code file.hpp.vm} {@code TypedefItem} branch).
+     */
+    public boolean preserve_typedef_names;
+
+    /**
+     * Suffix appended when a resolved scoped reference names an {@code enum}
+     * declaration (e.g. C++'s {@code "::Value"}). FACE TS 3.2 §4.14.8.8.2 maps
+     * an IDL enum to a C++ struct wrapping a nested {@code enum Value}, with a
+     * private, undefined default constructor "to prohibit construction" of the
+     * wrapper itself -- so a variable, field, or parameter that needs to hold
+     * an actual value of that enum type must be declared as
+     * {@code <EnumName>::Value}, not {@code <EnumName>} (confirmed against
+     * §4.14.8.6's own cast example: {@code (Color::Value)Color::RED}).
+     *
+     * <p>{@code null}/empty means no suffix is appended (the historical
+     * behavior, and the correct default for a language with no equivalent
+     * wrapper-struct convention).
+     */
+    public String enum_value_suffix;
+
     // ── Naming helpers ────────────────────────────────────────────────────────
 
     /**

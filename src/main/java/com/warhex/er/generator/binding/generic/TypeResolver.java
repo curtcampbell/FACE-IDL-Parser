@@ -35,6 +35,7 @@ public class TypeResolver {
 
     private final LanguageDescriptor descriptor;
     private final Map<String, IdlType> typedefMap;
+    private final Set<String> enumNames;
     private final Set<String> reservedWordSet;
 
     /**
@@ -42,10 +43,19 @@ public class TypeResolver {
      * @param typedefMap  typedef alias map from {@link
      *                    com.warhex.er.generator.binding.TemplateInstantiator#typedefMap()};
      *                    may be {@code null} (treated as empty)
+     * @param enumNames   bare declarator names of enums actually rendered for
+     *                    this language (i.e. collected from the same file
+     *                    units {@code buildRenderItems}/{@code walkPerConstruct}
+     *                    walk, not the full merged spec -- static framework
+     *                    IDL like {@code FACE/Common.idl} is parsed for symbol
+     *                    resolution but never rendered, so its enums must be
+     *                    excluded here); may be {@code null} (treated as empty)
      */
-    public TypeResolver(LanguageDescriptor descriptor, Map<String, IdlType> typedefMap) {
+    public TypeResolver(LanguageDescriptor descriptor, Map<String, IdlType> typedefMap,
+                        Set<String> enumNames) {
         this.descriptor    = descriptor;
         this.typedefMap    = typedefMap != null ? typedefMap : Map.of();
+        this.enumNames     = enumNames != null ? enumNames : Set.of();
         this.reservedWordSet = descriptor.reserved_words != null
                 ? new HashSet<>(descriptor.reserved_words)
                 : Set.of();
@@ -154,9 +164,19 @@ public class TypeResolver {
                     if (mapped != null) return mapped;
                 }
                 current = s.qualifiedName();
-            } else {
-                // Non-scoped underlying type — resolve recursively
+            } else if (!descriptor.preserve_typedef_names) {
+                // Non-scoped underlying type — resolve recursively. Only when
+                // the language doesn't itself render typedef declarations
+                // (see LanguageDescriptor#preserve_typedef_names) — otherwise
+                // this discards a real, resolvable name (e.g. "QoS_EVENT_TYPE")
+                // in favor of its structural expansion (e.g.
+                // "FACE::Sequence<QoS_Element>"), contradicting FACE TS 3.2
+                // Table 14's own example of typedef-name preservation.
                 return type(underlying);
+            } else {
+                // Preserve the typedef's own name (Step 3, below) instead of
+                // expanding to its underlying structural type.
+                break;
             }
         }
 
@@ -167,6 +187,25 @@ public class TypeResolver {
         // qualified in IDL by FaceTssReader) and Template outer-alias references
         // resolved one hop above through the typedef chain
         // (session-docs/BUG-struct-field-namespace-qualification.md).
+        //
+        // Step 4: append the enum-value suffix (e.g. C++'s "::Value") when the
+        // resolved name is a known, *actually-rendered* enum's wrapper-struct
+        // name. Matched on the last segment, the same convention as
+        // typedefMap's bare-name keys (queries arrive bare, unprefixed-
+        // qualified, or "::"-prefixed qualified -- see resolveTypedefTarget).
+        // enumNames deliberately excludes enums from static framework IDL
+        // (e.g. FACE::RETURN_CODE_TYPE, parsed for symbol resolution but never
+        // rendered as a wrapper struct -- BLUSH hand-implements it as a plain
+        // C++ enum) -- see the caller-side collection in
+        // GenericLanguageMapper/ContextAssembler for how that's enforced. A
+        // struct sharing a simple name with an enum would collide here; not
+        // currently possible given this codebase's "Kind_*_Enum" naming
+        // convention, but a real constraint if that convention is ever
+        // dropped.
+        if (descriptor.enum_value_suffix != null && !descriptor.enum_value_suffix.isEmpty()
+                && enumNames.contains(lastSegment(current))) {
+            return current + descriptor.enum_value_suffix;
+        }
         return current;
     }
 

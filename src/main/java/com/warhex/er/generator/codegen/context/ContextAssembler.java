@@ -99,7 +99,21 @@ public final class ContextAssembler {
         TypeResolver types = null;
         if (languageDir != null) {
             LanguageDescriptor desc = loadDescriptor(languageDir);
-            types = new TypeResolver(desc, instantiator.typedefMap());
+            // enumNames is collected from the same definitions that actually
+            // get rendered (file units when present, else the full spec),
+            // NOT the full merged spec unconditionally -- see
+            // GenericLanguageMapper#internalMap's identical logic and
+            // session-docs/BUG-struct-field-namespace-qualification.md, Bug #7.
+            Set<String> enumNames = new HashSet<>();
+            List<IdlFileUnit> units = parseResult.fileUnits();
+            if (!units.isEmpty()) {
+                for (IdlFileUnit unit : units) {
+                    collectEnumNames(unit.definitions(), enumNames);
+                }
+            } else {
+                collectEnumNames(spec.definitions(), enumNames);
+            }
+            types = new TypeResolver(desc, instantiator.typedefMap(), enumNames);
             LOG.info("Language descriptor loaded from: " + languageDir);
         }
 
@@ -669,6 +683,24 @@ public final class ContextAssembler {
      * {@code langDir}.  Mirrors the private {@code deserialise()} logic in
      * {@link com.warhex.er.generator.binding.generic.LanguageDescriptorLoader}.
      */
+    /**
+     * Recursively collects the bare declarator names of every top-level or
+     * module-nested {@code enum} in {@code defs}, for {@link TypeResolver}'s
+     * {@code enum_value_suffix} logic. See {@link
+     * com.warhex.er.generator.binding.generic.GenericLanguageMapper}'s
+     * identical helper for why this must be scoped to actually-rendered
+     * definitions rather than the full merged spec.
+     */
+    private static void collectEnumNames(List<IdlDefinition> defs, Set<String> names) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectEnumNames(m.definitions(), names);
+            } else if (def instanceof EnumNode e) {
+                names.add(e.name());
+            }
+        }
+    }
+
     private static LanguageDescriptor loadDescriptor(Path langDir) throws IOException {
         Path descriptorFile = langDir.resolve("language.yaml");
         if (!Files.isRegularFile(descriptorFile)) {

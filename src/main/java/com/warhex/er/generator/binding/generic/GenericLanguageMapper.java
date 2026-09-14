@@ -179,11 +179,31 @@ public class GenericLanguageMapper implements LanguageMapper {
     private void internalMap(IdlParseResult result, Path langRoot) throws Exception {
         LOG.info(descriptor.name + " output root: " + langRoot);
 
-        // Build type resolver with typedef chain support
-        TemplateInstantiator instantiator = new TemplateInstantiator(result.mergedSpec());
-        TypeResolver types = new TypeResolver(descriptor, instantiator.typedefMap());
-
         IdlSpecification spec = result.mergedSpec();
+        List<IdlFileUnit> units = result.fileUnits();
+
+        // Build type resolver with typedef chain support. enumNames is
+        // collected from the same definitions that actually get rendered
+        // (file units when present, else the full spec) -- NOT the full
+        // merged spec unconditionally -- because that also includes static
+        // framework IDL (FACE/Common.idl, FACE/TSS/Common.idl) parsed for
+        // symbol resolution but never rendered as a wrapper struct. Its
+        // enums (e.g. RETURN_CODE_TYPE) are commonly hand-implemented as a
+        // plain C++ enum instead, so TypeResolver must not treat them as
+        // needing the enum_value_suffix (session-docs/BUG-struct-field-namespace-qualification.md,
+        // Bug #7).
+        Set<String> enumNames = new HashSet<>();
+        if (!units.isEmpty()) {
+            for (IdlFileUnit unit : units) {
+                collectEnumNames(unit.definitions(), enumNames);
+            }
+        } else {
+            collectEnumNames(spec.definitions(), enumNames);
+        }
+
+        TemplateInstantiator instantiator = new TemplateInstantiator(spec);
+        TypeResolver types = new TypeResolver(descriptor, instantiator.typedefMap(), enumNames);
+
         Set<String> reservedWords = descriptor.reserved_words != null
                 ? new HashSet<>(descriptor.reserved_words) : Set.of();
 
@@ -202,7 +222,6 @@ public class GenericLanguageMapper implements LanguageMapper {
         LinkedHashMap<Path, List<String>> dirIndex = new LinkedHashMap<>();
 
         String strategy = descriptor.iteration != null ? descriptor.iteration.strategy : "per_construct";
-        List<IdlFileUnit> units = result.fileUnits();
 
         if ("per_idl_file".equals(strategy)) {
             if (units.isEmpty()
@@ -501,6 +520,25 @@ public class GenericLanguageMapper implements LanguageMapper {
                 items.add(new RenderItem.TypedefItem(t));
             } else if (def instanceof UnionNode || def instanceof ConstNode) {
                 LOG.fine("Skipping " + def.getClass().getSimpleName() + ": " + def.name());
+            }
+        }
+    }
+
+    /**
+     * Recursively collects the bare declarator names of every top-level or
+     * module-nested {@code enum} in {@code defs}, for {@link TypeResolver}'s
+     * {@code enum_value_suffix} logic. Deliberately does not recurse into a
+     * {@code TemplateInstNode}'s post-instantiation definitions (same scope
+     * limitation as {@link TemplateInstantiator}'s own typedef/template
+     * registries) -- not currently needed since no enum failing without this
+     * fix is declared inside a template body.
+     */
+    private void collectEnumNames(List<IdlDefinition> defs, Set<String> names) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectEnumNames(m.definitions(), names);
+            } else if (def instanceof EnumNode e) {
+                names.add(e.name());
             }
         }
     }

@@ -78,13 +78,34 @@ primitive_types:
   BOOLEAN: "FACE::Boolean"
 
 parameterized_types:
-  string: "FACE::String_Type"
+  # FACE TS 3.2 §4.14.8.7.3: strings map to FACE::String (§K.2.3), not a
+  # bespoke "*_Type" name -- confirmed against the standard's own worked
+  # example (typedef FACE::String Foo;), not assumed from this file's prior
+  # convention. wstring is left as-is (not a name defined by the standard
+  # text found so far, and unused by any model exercised to date).
+  string: "FACE::String"
   wstring: "FACE::WString_Type"
   sequence: "FACE::Sequence<{element}>"
   sequence_include: "FACE/Sequence.hpp"
   array: "{element}"
 
 scoped_overrides: {}
+
+# C++'s per_idl_file strategy actually renders typedef declarations
+# (file.hpp.vm's TypedefItem branch), so a typedef reference should be
+# preserved by name rather than expanded to its underlying structural type
+# (FACE TS 3.2 Table 14's own example: struct field of type MyLong stays
+# "MyLong", not "FACE::Long"). See LanguageDescriptor#preserve_typedef_names.
+preserve_typedef_names: true
+
+# FACE TS 3.2 §4.14.8.8.2: an IDL enum maps to a C++ struct wrapping a
+# nested "enum Value", with a private/undefined default constructor "to
+# prohibit construction" of the wrapper itself -- so a variable, field, or
+# parameter holding an actual value of that enum type must be declared as
+# "<EnumName>::Value", not "<EnumName>" (confirmed against §4.14.8.6's own
+# cast example: (Color::Value)Color::RED). See
+# LanguageDescriptor#enum_value_suffix.
+enum_value_suffix: "::Value"
 
 immutable_types: []
 boxed_types: {}
