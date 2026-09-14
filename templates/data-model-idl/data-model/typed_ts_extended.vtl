@@ -17,10 +17,15 @@
 ## The <REQ>_<RESP> module level comes from the instantiation statement below.
 ##
 ## STANDARD connections are skipped via #stop; pipeline discards blank output.
+## RESPONDER-role connections are ALSO skipped: FACE TS 3.2 Appendix E.3.2/E.3.3
+## -- the Extended TypedTS interface (Send_Message_Blocking/Send_Message_Async)
+## is client-only ("Servers, publishers and subscribers do not use
+## Send_Message_Async(TS)"). The server side instead gets two Standard TypedTS
+## modules -- see typed_ts_responder_request.vtl / typed_ts_responder_response.vtl.
 ## NOTE: @filename references $respName — safe because @filename is evaluated only
 ##       after confirming non-blank (i.e., non-skipped) output.
 ##
-#if ($conn.typedTsVariant.name() != "EXTENDED")
+#if ($conn.typedTsVariant.name() != "EXTENDED" || $conn.role.name() == "RESPONDER")
 #stop
 #end
 #set ($reqName  = $conn.messageType.name)

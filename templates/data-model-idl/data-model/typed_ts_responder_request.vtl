@@ -1,0 +1,67 @@
+## typed_ts_responder_request.vtl
+## Generates the Standard TypedTS IDL for the REQUEST side of a RESPONDER-role
+## CLIENT_SERVER connection.
+##
+## FACE Technical Standard 3.2 Appendix E.3.2/E.3.3: the server side of a
+## client/server connection does NOT use the Extended TypedTS interface
+## (Send_Message_Blocking/Send_Message_Async are client-only -- "Servers,
+## publishers and subscribers do not use Send_Message_Async(TS)"). Instead the
+## server receives requests exactly like a pub/sub subscriber, via the
+## ordinary Standard TypedTS's Register_Callback/Callback_Handler, and is
+## handed a transaction_id to correlate its reply (E.3.2.2: "Servers ... are
+## returned a valid transaction_id from the Receive_Message(TS) call ...
+## Servers use the provided transaction_id when sending a response").
+##
+## Conforms to FACE Technical Standard 3.2 §4.8.4.1 req 3 (same rule as any
+## Standard TypedTS -- the module's identity depends only on the datatype,
+## not on how it's used):
+##   module name: FACE::TSS::<UOP_MODEL_NAME>::<DATATYPE_TYPE>::TypedTS
+##   output path: FACE/TSS/<UOP_MODEL_NAME>/<DATATYPE_TYPE>/TypedTS.idl
+## where UOP_MODEL_NAME is the root UoPModel that DEFINES the REQUEST datatype.
+##
+## Deliberately emitted at the SAME canonical path a plain pub/sub connection
+## for this same request type would use -- if the request type is ever also
+## used on an ordinary QUEUING/SINGLE_INSTANCE connection elsewhere, both
+## converge on one identical, non-conflicting TypedTS.idl.
+##
+## @foreach  uop_connection
+## @filename ${connTssModPath}/${msgName}/TypedTS.idl
+##
+## Context (from IdlGeneratorPipeline.uoPConnectionContext()):
+##   $connTssModuleOpeners / $connTssModuleClosers / $connTssContentIndent
+##   $connTssModPath / $connTssGuardPrefix    — computed from the REQUEST type
+##   $connDmModPath  / $connDmPrefix          — request type's defining model
+##
+## Only RESPONDER-role CLIENT_SERVER connections are handled here; everything
+## else is skipped via #stop (pipeline discards blank output).
+##
+#if ($conn.typedTsVariant.name() != "EXTENDED" || $conn.role.name() != "RESPONDER")
+#stop
+#end
+#set ($msgName = $conn.messageType.name)
+#set ($guard   = "${connTssGuardPrefix}_${msgName.toUpperCase()}_TYPEDTS_IDL")
+//! Source file: ${connTssModPath}/${msgName}/TypedTS.idl
+//!
+//! Standard TypedTS instantiation: ${msgName} (RESPONDER request-receive side)
+//! FACE Technical Standard 3.2, §4.8.4.1 / Appendix E.3.2
+//! UoP: ${uopName}  Connection: ${connName}  Kind: ${conn.kind}  Role: ${conn.role}
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/TSS/TypedTS.idl>
+\#include <${connDmModPath}/${msgName}.idl>
+
+#foreach ($line in $connTssModuleOpeners)
+$line
+#end
+
+${connTssContentIndent}typedef ${connDmPrefix}${msgName}  ${msgName}_t;
+
+${connTssContentIndent}module ::FACE::TSS::Typed<${msgName}_t> ${msgName};
+
+#foreach ($line in $connTssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

@@ -4,6 +4,7 @@ import com.warhex.er.generator.model.EntityDescriptor;
 import com.warhex.er.generator.model.EntityModel;
 import com.warhex.er.generator.model.FieldDescriptor;
 import com.warhex.er.generator.reader.dto.ConnectionData;
+import com.warhex.er.generator.reader.dto.ConnectionRole;
 import com.warhex.er.generator.reader.dto.TypedTsVariant;
 import com.warhex.er.generator.reader.dto.UoPData;
 import com.warhex.er.generator.reader.dto.UoPModelData;
@@ -460,6 +461,30 @@ public class IdlGeneratorPipeline {
             String respDm = typeIdlModule(conn.getResponseMessageType(), dmModule);
             ctx.put("connRespDmModPath", respDm.replace('.', '/'));
             ctx.put("connRespDmPrefix",  "::" + respDm.replace(".", "::") + "::");
+
+            // RESPONDER role only: FACE TS 3.2 Appendix E.3.2/E.3.3 -- the
+            // server side of a CLIENT_SERVER connection does NOT use the
+            // Extended TypedTS interface at all ("Servers, publishers and
+            // subscribers do not use Send_Message_Async(TS)"); it uses two
+            // ordinary Standard TypedTS modules instead -- one for the
+            // request type (receive, via connTssModule* above, already
+            // computed from conn.getMessageType()) and one for the response
+            // type (send). This block computes the response type's own
+            // Standard TypedTS module context, scoped to ITS OWN defining
+            // model per §4.8.4.1 req 3 -- mirrors connTssModule*/connTssModPath
+            // above exactly, just for respDm instead of dmModule.
+            if (conn.getRole() == ConnectionRole.RESPONDER) {
+                String respTssModule = respDm.contains(".DM.")
+                        ? respDm.replace(".DM.", ".TSS.")
+                        : respDm + ".TSS";
+                List<String> respTssSegs = Arrays.asList(respTssModule.split("\\."));
+                ctx.put("connRespTssModuleOpeners", buildOpeners(respTssSegs));
+                ctx.put("connRespTssModuleClosers", buildClosers(respTssSegs));
+                ctx.put("connRespTssContentIndent", "  ".repeat(respTssSegs.size()));
+                ctx.put("connRespTssModPath",     respTssModule.replace('.', '/'));
+                ctx.put("connRespTssGuardPrefix", respTssModule.replace('.', '_').toUpperCase(Locale.ROOT));
+                ctx.put("connRespTssPrefix",      "::" + respTssModule.replace(".", "::") + "::");
+            }
         }
         return ctx;
     }

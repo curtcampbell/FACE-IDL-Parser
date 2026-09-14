@@ -1,0 +1,39 @@
+## typed_ts_responder_request_injectable.vtl
+## Generates the Injectable<TypedTS> instantiation for the REQUEST side of a
+## RESPONDER-role CLIENT_SERVER connection's Standard TypedTS (see
+## typed_ts_responder_request.vtl). Same rationale/shape as
+## typed_ts_standard_injectable.vtl (kept in a separate file/instantiation
+## for the same reasons documented there: no nested-instantiation support,
+## and one-instantiation-per-file-unit for path_from_namespace).
+##
+## @foreach  uop_connection
+## @filename ${connTssModPath}/${msgName}/TypedTS_Injectable.idl
+##
+#if ($conn.typedTsVariant.name() != "EXTENDED" || $conn.role.name() != "RESPONDER")
+#stop
+#end
+#set ($msgName = $conn.messageType.name)
+#set ($guard   = "${connTssGuardPrefix}_${msgName.toUpperCase()}_TYPEDTS_INJECTABLE_IDL")
+//! Source file: ${connTssModPath}/${msgName}/TypedTS_Injectable.idl
+//!
+//! Injectable<TypedTS> instantiation for: ${msgName} (RESPONDER request-receive side)
+//! FACE Technical Standard 3.2 (FACE/Injectable.idl)
+//! UoP: ${uopName}  Connection: ${connName}  Kind: ${conn.kind}  Role: ${conn.role}
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Injectable.idl>
+\#include <${connTssModPath}/${msgName}/TypedTS.idl>
+
+#foreach ($line in $connTssModuleOpeners)
+$line
+#end
+
+${connTssContentIndent}module ::FACE::Injectable<${connTssPrefix}${msgName}::TypedTS> ${msgName}_TypedTS_Injectable;
+
+#foreach ($line in $connTssModuleClosers)
+$line
+#end
+
+#endif // ${guard}

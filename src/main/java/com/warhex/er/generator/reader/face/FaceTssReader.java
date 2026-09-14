@@ -999,9 +999,10 @@ public class FaceTssReader {
      * {@code uop:ClientServerConnection} element.
      *
      * <p>Both {@code requestType} and {@code responseType} attributes are resolved
-     * to {@link TssTypeData} references.  The connection role defaults to
-     * {@link ConnectionRole#REQUESTER} since the XMI does not carry an explicit
-     * direction indicator at this level.
+     * to {@link TssTypeData} references.  The connection role is read from the
+     * XMI's {@code role} attribute ({@code "Client"} → {@link ConnectionRole#REQUESTER},
+     * {@code "Server"} → {@link ConnectionRole#RESPONDER}); absent or any other
+     * value defaults to {@link ConnectionRole#REQUESTER}.
      */
     private ConnectionData buildClientServerConnection(Element connEl) {
         String id   = connEl.getAttributeNS(FaceXmiDocument.XMI_NS, "id");
@@ -1013,11 +1014,16 @@ public class FaceTssReader {
         TssTypeData requestType  = reqUuid  != null ? typeById.get(reqUuid)  : null;
         TssTypeData responseType = respUuid != null ? typeById.get(respUuid) : null;
 
+        String roleAttr = connEl.getAttribute("role");
+        ConnectionRole role = "Server".equals(roleAttr)
+                ? ConnectionRole.RESPONDER
+                : ConnectionRole.REQUESTER;
+
         ConnectionData cd = new ConnectionData();
         cd.setName(name);
         cd.setUuid(id);
         cd.setKind(ConnectionKind.CLIENT_SERVER); // also sets EXTENDED variant
-        cd.setRole(ConnectionRole.REQUESTER);     // default; can be overridden by caller
+        cd.setRole(role);
         cd.setMessageType(requestType);
         cd.setResponseMessageType(responseType);
         return cd;

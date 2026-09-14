@@ -1,0 +1,69 @@
+## typed_ts_standard_injectable.vtl
+## Generates the Injectable<TypedTS> instantiation for a QUEUING or
+## SINGLE_INSTANCE connection's Standard TypedTS (see typed_ts_standard.vtl).
+##
+## FACE Technical Standard 3.2 defines a generic
+##   module FACE { module Injectable<interface INTERFACE_TYPE> { interface Injectable {...}; }; };
+## (FACE/Injectable.idl) used by the external executive to inject a live
+## interface implementation into a UoP. The framework itself instantiates
+## this for static TS capabilities, e.g. FACE/TSS/TPM_Injectable.idl's
+## "module Injectable<FACE::TSS::TPM::TPMTS> TPMTS_Injectable;". Each
+## per-connection TypedTS needs the same treatment so FaceInjectable<DataType>
+## (face-utils/include/FaceInjectable.h) can wire up the connection.
+##
+## Kept in a SEPARATE file (and SEPARATE top-level instantiation) from
+## ${msgName}'s own TypedTS.idl rather than nested inside it or added as a
+## second top-level instantiation in the same file:
+##   - FACE-IDL-Parser's generic-module engine does not support a template
+##     instantiation nested inside another instantiation's expanded body.
+##   - Two top-level template instantiations in ONE file unit breaks the
+##     per_idl_file/path_from_namespace output-path derivation (it assumes
+##     exactly one instantiation per file per FACE TS 3.2 §4.8.4.1 -- see
+##     GenericLanguageMapper.extractModuleStack's warning when violated).
+## A same-directory sibling file keeps both the one-instantiation-per-file
+## invariant and produces the sibling C++ namespace face-utils expects:
+## FACE::TSS::<model>::<msgName>_TypedTS_Injectable::Injectable.
+##
+## @foreach  uop_connection
+## @filename ${connTssModPath}/${msgName}/TypedTS_Injectable.idl
+##
+## Context: same as typed_ts_standard.vtl, plus:
+##   $connTssPrefix — "::FACE::TSS::<MODEL>::" (fully-qualified form of
+##                    $connTssModPath) -- the actual parameter below must be
+##                    fully qualified: the C++ mapper's include-path
+##                    computation for a template_inst's resolved actual
+##                    derives the #include path directly from however the
+##                    actual's name was written in the IDL (it does not
+##                    perform full C++-style enclosing-scope lookup), so an
+##                    unqualified "${msgName}::TypedTS" here previously
+##                    produced a broken "#include <${msgName}/TypedTS.hpp>"
+##                    instead of the real "FACE/TSS/<MODEL>/${msgName}/TypedTS.hpp".
+##
+#if ($conn.typedTsVariant.name() != "STANDARD")
+#stop
+#end
+#set ($msgName = $conn.messageType.name)
+#set ($guard   = "${connTssGuardPrefix}_${msgName.toUpperCase()}_TYPEDTS_INJECTABLE_IDL")
+//! Source file: ${connTssModPath}/${msgName}/TypedTS_Injectable.idl
+//!
+//! Injectable<TypedTS> instantiation for: ${msgName}
+//! FACE Technical Standard 3.2 (FACE/Injectable.idl)
+//! UoP: ${uopName}  Connection: ${connName}  Kind: ${conn.kind}  Role: ${conn.role}
+
+#ifndef ${guard}
+\#define ${guard}
+
+\#include <FACE/Injectable.idl>
+\#include <${connTssModPath}/${msgName}/TypedTS.idl>
+
+#foreach ($line in $connTssModuleOpeners)
+$line
+#end
+
+${connTssContentIndent}module ::FACE::Injectable<${connTssPrefix}${msgName}::TypedTS> ${msgName}_TypedTS_Injectable;
+
+#foreach ($line in $connTssModuleClosers)
+$line
+#end
+
+#endif // ${guard}
