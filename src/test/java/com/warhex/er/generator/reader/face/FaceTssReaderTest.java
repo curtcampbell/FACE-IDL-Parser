@@ -105,8 +105,12 @@ class FaceTssReaderTest {
 
         assertTrue(byFieldName.containsKey("mT1"), "Expected field mT1");
         assertTrue(byFieldName.containsKey("mT2"), "Expected field mT2");
-        assertEquals("T1", byFieldName.get("mT1").getIdlType());
-        assertEquals("T2", byFieldName.get("mT2").getIdlType());
+        // Fully qualified even though PV1/T1/T2 share a module: the language-binding
+        // step generates one header per struct and needs an explicit include path
+        // for every cross-type reference, same-module or not (see
+        // session-docs/BUG-struct-field-namespace-qualification.md).
+        assertEquals("::FACE::DM::SampleUSM::T1", byFieldName.get("mT1").getIdlType());
+        assertEquals("::FACE::DM::SampleUSM::T2", byFieldName.get("mT2").getIdlType());
     }
 
     @Test

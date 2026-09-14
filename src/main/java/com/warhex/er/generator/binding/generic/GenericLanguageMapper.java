@@ -327,7 +327,7 @@ public class GenericLanguageMapper implements LanguageMapper {
             putLegacyHelper(ctx, moduleStack);
             // Compute derived context keys that the bespoke mappers pre-computed
             // (e.g. $localImports for Python structs, $resolvedImports for template_inst).
-            putComputedLegacyKeys(ctx, def, instantiation);
+            putComputedLegacyKeys(ctx, def, instantiation, types);
 
             render(entry.template, ctx, outPath);
             LOG.info("  → " + outPath);
@@ -393,7 +393,7 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
 
         List<Object> items = new ArrayList<>();
-        buildRenderItems(unit.definitions(), items, includeSet, instantiator);
+        buildRenderItems(unit.definitions(), items, includeSet, instantiator, types);
 
         VelocityContext ctx = new VelocityContext();
         ctx.put("types",         types);
@@ -425,15 +425,16 @@ public class GenericLanguageMapper implements LanguageMapper {
     private void buildRenderItems(List<IdlDefinition> defs,
                                   List<Object> items,
                                   Set<String> includes,
-                                  TemplateInstantiator instantiator) throws Exception {
+                                  TemplateInstantiator instantiator,
+                                  TypeResolver types) throws Exception {
         for (IdlDefinition def : defs) {
             if (def instanceof ModuleNode m) {
                 items.add(new RenderItem.NsOpen(m.name()));
-                buildRenderItems(m.definitions(), items, includes, instantiator);
+                buildRenderItems(m.definitions(), items, includes, instantiator, types);
                 items.add(new RenderItem.NsClose(m.name()));
 
             } else if (def instanceof StructNode s) {
-                collectIncludesForFields(s.members(), includes);
+                collectIncludesForFields(s.members(), includes, types);
                 items.add(new RenderItem.StructItem(s));
 
             } else if (def instanceof EnumNode e) {
@@ -462,7 +463,7 @@ public class GenericLanguageMapper implements LanguageMapper {
                 if (descriptor.include_computation != null) {
                     for (IdlType actual : res.resolvedActuals) {
                         if (actual instanceof IdlType.Scoped s && !isTemplateInstSkipped(s.qualifiedName())) {
-                            includes.add(includePathForScoped(s.qualifiedName()));
+                            includes.add(includePathForScoped(s.qualifiedName(), types));
                         }
                     }
                 }
@@ -482,8 +483,23 @@ public class GenericLanguageMapper implements LanguageMapper {
 
             } else if (def instanceof TemplateModuleNode) {
                 LOG.fine("Skipping TemplateModuleNode: " + def.name());
-            } else if (def instanceof UnionNode || def instanceof TypedefNode
-                    || def instanceof ConstNode) {
+            } else if (def instanceof TypedefNode t) {
+                // Skip include collection for a uop:Template's own T_<Name>-wrapper
+                // outer alias (e.g. "typedef T_Address::Address Address;"): its
+                // underlying struct is always co-located in this same file unit
+                // (struct.vtl's IDL-1 rule emits both together), so no #include is
+                // ever needed for it. Collecting one anyway produces a bogus
+                // self-referential "T_Address/Address.hpp" path with no enclosing
+                // module prefix, since the reference is relative-only by
+                // construction (see TypeResolver#resolveTypedefTarget's matching
+                // self-reference guard).
+                boolean isTemplateWrapperAlias = t.underlyingType() instanceof IdlType.Scoped s
+                        && types.lastSegment(s.qualifiedName()).equals(t.name());
+                if (!isTemplateWrapperAlias) {
+                    collectIncludes(t.underlyingType(), includes, types);
+                }
+                items.add(new RenderItem.TypedefItem(t));
+            } else if (def instanceof UnionNode || def instanceof ConstNode) {
                 LOG.fine("Skipping " + def.getClass().getSimpleName() + ": " + def.name());
             }
         }
@@ -556,11 +572,11 @@ public class GenericLanguageMapper implements LanguageMapper {
     // Include helpers
     // =========================================================================
 
-    private void collectIncludesForFields(List<FieldNode> fields, Set<String> acc) {
+    private void collectIncludesForFields(List<FieldNode> fields, Set<String> acc, TypeResolver types) {
         if (descriptor.include_computation == null) return;
         boolean hasSequence = false;
         for (FieldNode f : fields) {
-            collectIncludes(f.type(), acc);
+            collectIncludes(f.type(), acc, types);
             if (f.type() instanceof IdlType.Sequence) hasSequence = true;
         }
         if (hasSequence && descriptor.include_computation.sequence_include != null) {
@@ -568,19 +584,19 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
     }
 
-    private void collectIncludes(IdlType t, Set<String> acc) {
+    private void collectIncludes(IdlType t, Set<String> acc, TypeResolver types) {
         if (descriptor.include_computation == null) return;
         if (t instanceof IdlType.Scoped s) {
             if (!isSkipped(s.qualifiedName())) {
-                acc.add(includePathForScoped(s.qualifiedName()));
+                acc.add(includePathForScoped(s.qualifiedName(), types));
             }
         } else if (t instanceof IdlType.Sequence seq) {
-            collectIncludes(seq.elementType(), acc);
+            collectIncludes(seq.elementType(), acc, types);
             if (descriptor.include_computation.sequence_include != null) {
                 acc.add(descriptor.include_computation.sequence_include);
             }
         } else if (t instanceof IdlType.Array arr) {
-            collectIncludes(arr.elementType(), acc);
+            collectIncludes(arr.elementType(), acc, types);
         }
     }
 
@@ -610,14 +626,8 @@ public class GenericLanguageMapper implements LanguageMapper {
         return false;
     }
 
-    private String includePathForScoped(String qualifiedName) {
-        if (descriptor.include_computation != null
-                && descriptor.include_computation.include_path_pattern != null) {
-            TypeResolver tmp = new TypeResolver(descriptor, Map.of());
-            return tmp.includePathFor(qualifiedName);
-        }
-        String stripped = qualifiedName.startsWith("::") ? qualifiedName.substring(2) : qualifiedName;
-        return stripped.replace("::", "/") + ".hpp";
+    private String includePathForScoped(String qualifiedName, TypeResolver types) {
+        return types.includePathFor(qualifiedName);
     }
 
     // =========================================================================
@@ -795,12 +805,13 @@ public class GenericLanguageMapper implements LanguageMapper {
     @SuppressWarnings("unchecked")
     private void putComputedLegacyKeys(VelocityContext ctx,
                                        IdlDefinition def,
-                                       TemplateInstantiator.InstantiationResult instantiation) {
+                                       TemplateInstantiator.InstantiationResult instantiation,
+                                       TypeResolver types) {
         // ── Descriptor-driven include computation (independent of legacy helper) ────────
         // $includes — local #include paths for C++ struct templates
         if (def instanceof StructNode s && descriptor.include_computation != null) {
             LinkedHashSet<String> inc = new LinkedHashSet<>();
-            collectIncludesForFields(s.members(), inc);
+            collectIncludesForFields(s.members(), inc, types);
             ctx.put("includes", new ArrayList<>(inc));
         }
 
@@ -810,7 +821,7 @@ public class GenericLanguageMapper implements LanguageMapper {
             List<String> resolvedIncludes = new ArrayList<>();
             for (IdlType actual : instantiation.resolvedActuals) {
                 if (actual instanceof IdlType.Scoped s && !isTemplateInstSkipped(s.qualifiedName())) {
-                    resolvedIncludes.add(includePathForScoped(s.qualifiedName()));
+                    resolvedIncludes.add(includePathForScoped(s.qualifiedName(), types));
                 }
             }
             ctx.put("resolvedIncludes", resolvedIncludes);

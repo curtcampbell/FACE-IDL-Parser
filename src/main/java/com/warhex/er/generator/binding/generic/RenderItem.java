@@ -3,6 +3,7 @@ package com.warhex.er.generator.binding.generic;
 import com.warhex.er.generator.ast.EnumNode;
 import com.warhex.er.generator.ast.InterfaceNode;
 import com.warhex.er.generator.ast.StructNode;
+import com.warhex.er.generator.ast.TypedefNode;
 
 import java.util.Set;
 
@@ -113,5 +114,24 @@ public final class RenderItem {
          *         {@code interface}-kind formal parameters
          */
         public Set<String> getInterfaceKindActuals() { return interfaceKindActuals; }
+    }
+
+    // =========================================================================
+
+    /**
+     * Instructs the template to emit a {@code typedef} declaration (FACE TS 3.2
+     * §4.14.8.5). Used both for plain primitive/bounded-string aliases and for a
+     * {@code uop:Template}'s {@code T_<Name>}-wrapper outer convenience alias
+     * (§J.8 "Rule: Template") — the {@code per_idl_file} strategy previously
+     * dropped {@link TypedefNode} entirely, leaving both shapes undeclared in
+     * the generated C++ (session-docs/BUG-struct-field-namespace-qualification.md).
+     */
+    public static final class TypedefItem {
+        private final TypedefNode node;
+
+        public TypedefItem(TypedefNode node) { this.node = node; }
+
+        /** @return the typedef AST node */
+        public TypedefNode getNode() { return node; }
     }
 }

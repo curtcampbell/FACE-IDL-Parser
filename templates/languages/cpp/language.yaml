@@ -191,11 +191,19 @@ include_computation:
   # Headers always added for every template_inst construct
   template_inst_always_include:
     - "FACE/TSS/Common.hpp"
-  # Skip FACE:: namespace types when computing struct field includes.
-  # FACE types are covered by the unconditional #include <FACE/Common.hpp>.
+  # Skip only genuine FACE::Common.hpp/FACE::TSS built-ins when computing struct
+  # field includes -- those are covered by the unconditional #include
+  # <FACE/Common.hpp> (or a template_inst's own always-include). FACE::DM:: /
+  # FACE::TSS::<model>:: types are NOT covered by that and DO need an explicit
+  # include; a bare "FACE::" prefix here previously matched (and incorrectly
+  # skipped) every model type too, since they all live under FACE::, leaving
+  # most generated struct headers missing includes for their own fields (see
+  # session-docs/BUG-struct-field-namespace-qualification.md).
   skip_prefixes:
-    - "::FACE::"
-    - "FACE::"
+    - "::FACE::TSS"
+    - "FACE::TSS"
+    - "::FACE::Common"
+    - "FACE::Common"
   # Narrower skip set for template_inst resolved-actual includes.
   # FACE::DM:: types DO need explicit includes; only skip TSS and Common headers.
   template_inst_skip_prefixes:

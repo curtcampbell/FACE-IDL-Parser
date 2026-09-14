@@ -160,8 +160,14 @@ public class TypeResolver {
             }
         }
 
-        // Step 3: last-segment fallback
-        return lastSegment(current);
+        // Step 3: return the resolved name as-is. FACE TS 3.2 §4.14.8.4's C++
+        // mapping is identity on the IDL-qualified name (verbatim, not stripped
+        // to the simple name) -- stripping here previously discarded module
+        // qualification for both inter-Model references (already emitted fully
+        // qualified in IDL by FaceTssReader) and Template outer-alias references
+        // resolved one hop above through the typedef chain
+        // (session-docs/BUG-struct-field-namespace-qualification.md).
+        return current;
     }
 
     // =========================================================================
@@ -422,18 +428,85 @@ public class TypeResolver {
      * <p>Example (C++): {@code "::FACE::DM::SampleModel::Foo"} →
      * {@code "FACE/DM/SampleModel/Foo.hpp"}.
      *
+     * <p>Resolves the typedef chain first: a {@code uop:Template} type is
+     * declared inside its own {@code T_<Name>} wrapper module and reached from
+     * elsewhere via an outer convenience typedef (e.g. {@code CORE_Templates::UnitPrice}
+     * aliasing {@code CORE_Templates::T_UnitPrice::UnitPrice}) — its generated
+     * header lives at the wrapped path, not the alias's path, so the include
+     * must be computed from the resolved name, not the alias
+     * (session-docs/BUG-struct-field-namespace-qualification.md). A
+     * {@code uop:CompositeTemplate} type has no such wrapper/typedef, so this
+     * is a no-op for it.
+     *
      * @param qualifiedName fully-qualified IDL name (with or without leading {@code ::})
      * @return include path string
      */
     public String includePathFor(String qualifiedName) {
+        String target = resolveTypedefTarget(qualifiedName);
         if (descriptor.include_computation != null
                 && descriptor.include_computation.include_path_pattern != null) {
             return applyIncludePattern(
-                    descriptor.include_computation.include_path_pattern, qualifiedName);
+                    descriptor.include_computation.include_path_pattern, target);
         }
         // Default fallback (mirrors CppTypeHelper behaviour)
-        String stripped = qualifiedName.startsWith("::") ? qualifiedName.substring(2) : qualifiedName;
+        String stripped = target.startsWith("::") ? target.substring(2) : target;
         return stripped.replace("::", "/") + ".hpp";
+    }
+
+    /**
+     * If {@code qualifiedName} is a Template's outer convenience typedef (e.g.
+     * {@code CORE_Templates::UnitPrice}), resolves it to the real, T_-wrapped
+     * struct name its generated header actually lives at (e.g.
+     * {@code CORE_Templates::T_UnitPrice::UnitPrice}). Returns {@code qualifiedName}
+     * unchanged if it has no typedef entry, or if its underlying type isn't
+     * Scoped (e.g. a primitive typedef, which {@link #includePathFor} has no
+     * need to unwrap).
+     *
+     * <p>Single hop only, not a general typedef-chain walk: this convention
+     * (uop:Template's outer alias -> its own T_&lt;Name&gt;::&lt;Name&gt;) is
+     * exactly one level, by construction (see {@code struct.vtl}'s IDL-1 rule).
+     * A looping, self-resolving walk here is actively wrong for it, because the
+     * underlying type's own last segment is the *same* typedef name, which
+     * would otherwise re-match on a second pass and grow the qualified name
+     * without ever terminating.
+     *
+     * <p>Deliberately separate from the {@code scoped_overrides}-aware walk in
+     * {@link #resolveScoped(String)}: this helper is used only to find a
+     * type's real generated-file location, not to compute its rendered type
+     * name, so it does not consult {@code scoped_overrides}.
+     */
+    private String resolveTypedefTarget(String qualifiedName) {
+        // TemplateInstantiator.walkForTypedefs() stores TypedefNode entries keyed
+        // by the typedef's own bare declarator name (see TypedefNode.name()),
+        // not a fully-qualified path -- so the lookup key must be the last
+        // segment of qualifiedName, not qualifiedName itself.
+        IdlType underlying = typedefMap.get(lastSegment(qualifiedName));
+        if (!(underlying instanceof IdlType.Scoped s)) {
+            return qualifiedName;
+        }
+        // The typedef's underlying reference is written (and stored) relative to
+        // the scope it's declared in -- e.g. "T_UnitPrice::UnitPrice" inside
+        // "module CORE_Templates { typedef T_UnitPrice::UnitPrice UnitPrice; }" --
+        // so qualify it against qualifiedName's own enclosing-namespace prefix,
+        // unless it's already absolute.
+        String relative = s.qualifiedName();
+        // Guard: qualifiedName may already BE the typedef's own resolved target
+        // (e.g. the typedef declaration's own underlying-type reference, queried
+        // when emitting/including the typedef itself) rather than a reference to
+        // the outer alias. Both share the same last segment by construction
+        // ("UnitPrice" names both the alias and the real T_UnitPrice::UnitPrice
+        // struct), so the naive lookup above matches even when there is no alias
+        // to unwrap. Detect that case and return qualifiedName unchanged instead
+        // of re-appending another "T_UnitPrice::" hop.
+        if (qualifiedName.equals(relative) || qualifiedName.endsWith("::" + relative)) {
+            return qualifiedName;
+        }
+        if (relative.startsWith("::")) {
+            return relative;
+        }
+        int lastSep = qualifiedName.lastIndexOf("::");
+        String enclosingPrefix = lastSep >= 0 ? qualifiedName.substring(0, lastSep) : "";
+        return enclosingPrefix + "::" + relative;
     }
 
     /**

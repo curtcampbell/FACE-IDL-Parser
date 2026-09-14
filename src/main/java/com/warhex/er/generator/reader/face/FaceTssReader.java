@@ -383,22 +383,27 @@ public class FaceTssReader {
      * Rewrites template-to-template field references now that every type carries
      * its defining {@code idlModule}.
      *
-     * <p>A reference to a type in another IDL module is emitted as a fully
-     * module-scoped name ({@code ::FACE::DM::CORE_Templates::Money}) and gains an
-     * {@code #include} of that type's own file; a reference within the same module
-     * stays unqualified.  FACE Technical Standard 3.2 §J.8 requires the scoped form
-     * for inter-model references.
+     * <p>Every reference is emitted as a fully module-scoped name
+     * ({@code ::FACE::DM::CORE_Templates::Money}) and gains an {@code #include} of
+     * that type's own file — including references within the same IDL module as
+     * the referencing struct. FACE Technical Standard 3.2 §J.8 requires the scoped
+     * form for inter-model references; same-module references need it too, even
+     * though the bare name alone would resolve fine in the raw IDL/C++ text via
+     * enclosing-namespace lookup, because the separate language-binding step
+     * generates one header per struct and has no way to recover a same-module
+     * type's file location from an unqualified name (see
+     * session-docs/BUG-struct-field-namespace-qualification.md).
      */
     private void resolveInterModelTemplateReferences() {
         for (TssTypeData owner : typeById.values()) {
-            resolveInterModelFields(owner.getFields(), owner.getIdlModule());
+            resolveInterModelFields(owner.getFields());
         }
     }
 
-    private void resolveInterModelFields(List<FieldData> fields, String ownerModule) {
+    private void resolveInterModelFields(List<FieldData> fields) {
         if (fields == null) return;
         for (FieldData fd : fields) {
-            resolveInterModelFields(fd.getNestedFields(), ownerModule);
+            resolveInterModelFields(fd.getNestedFields());
 
             String refUuid = fd.getTemplateTypeUuid();
             if (refUuid == null || refUuid.isEmpty()) continue;
@@ -410,11 +415,7 @@ public class FaceTssReader {
             if (refModule == null || refModule.isEmpty()) continue;
 
             fd.setIdlIncludePath(refModule.replace('.', '/') + "/" + ref.getName() + ".idl");
-            if (!refModule.equals(ownerModule)) {
-                fd.setIdlType("::" + refModule.replace(".", "::") + "::" + ref.getName());
-            } else {
-                fd.setIdlType(ref.getName());
-            }
+            fd.setIdlType("::" + refModule.replace(".", "::") + "::" + ref.getName());
         }
     }
 
