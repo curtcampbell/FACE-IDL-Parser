@@ -12,13 +12,17 @@ Three command-line tools, built as a single Maven project:
 
 | Command           | Reads                                             | Produces                                                     |
 |-------------------|----------------------------------------------------|----------------------------------------------------------------|
-| `face-idl-gen`    | Entity models (YAML/JSON) or `.face` XMI files    | FACE IDL (data-model IDL, TSS/TypedTS IDL)                    |
-| `face-idl-binder` | FACE IDL                                          | Language bindings (C++, Java, Python, C#)                     |
+| `face-idl-gen`    | Entity models (YAML/JSON) or `.face` XMI files    | FACE IDL (data-model IDL, TSS/TypedTS IDL) — and, when given a language flag (`--cpp`, `--java`, `--python`, `--csharp`), bindings for that IDL in the same run |
+| `face-idl-binder` | FACE IDL you already have (hand-written, or from a previous run) | Language bindings (C++, Java, Python, C#), without regenerating the IDL |
 | `face-codegen`    | FACE IDL + optional `.face` model + your Velocity templates | Application code (transport services, UoP skeletons, etc.) |
 
-`face-idl-gen` and `face-idl-binder` generate FACE-standard IDL and bindings;
-`face-codegen` is for generating your own implementation code against
-user-supplied templates. See `docs/user-guide.md` for the full pipeline and
+`face-idl-gen` is the primary entry point: it generates FACE-standard IDL
+and, in the same step, bindings for it — see [Quick usage](#quick-usage)
+below. `face-idl-binder` exists separately for the narrower case of binding
+IDL you already have without asking `face-idl-gen` to regenerate it.
+`face-codegen` is a different kind of tool entirely: it generates *your*
+implementation code (not FACE-standard bindings) against templates you
+supply. See `docs/user-guide.md` for the full pipeline and
 template-authoring reference.
 
 ## Requirements
@@ -91,21 +95,64 @@ face-idl-tools-<version>/
 
 ## Quick usage
 
-Generate TSS data-model and TypedTS IDL from a `.face` model, then C++
-bindings from that IDL — this works with nothing beyond the install, since
-the FACE data-model-IDL and language-binding templates ship with the tool:
+### Generate IDL and bindings from a `.face` model
+
+The most common path — TSS data-model and TypedTS IDL from a `.face` model,
+plus C++ bindings for it — is a **single command**, and works with nothing
+beyond the install, since the FACE data-model-IDL and C++ binding templates
+ship with the tool:
 
 ```sh
 face-idl-gen generate-tss-idl --cpp -o out examples/GROCERY_with_IM.face
+```
+
+This writes both the IDL (`out/idl/data-model/FACE/...`) and ready-to-compile
+C++ headers (`out/cpp/face-model/include/FACE/DM/...`, `FACE/TSS/...`) —
+`generate-tss-idl` binds the IDL it just generated in the same run unless you
+pass `--idl-only`.
+
+`--cpp` is one of several language flags `generate-tss-idl` (and every other
+IDL-consuming command below) accepts: `--java`, `--python`, and `--csharp`
+also generate that language's bindings, `--all-face` generates C++ and Java
+together (the FACE-standard pair, and the default when no flag is given), and
+`--all-languages` generates all four. Most current consumers (e.g.
+[BLUSH](https://github.com/curtcampbell/BLUSH), a C++17 FACE library built on
+this tool) only exercise `--cpp` today — that's a reflection of what's been
+built on top of the output so far, not a limit of the tool, and is likely to
+change as other language bindings see real use.
+
+### Bind IDL you already have, without regenerating it
+
+If you're starting from IDL you didn't just generate — hand-written, or kept
+from an earlier run — `face-idl-binder` binds it directly:
+
+```sh
 face-idl-binder bind --cpp -i out/idl/data-model -o out/bindings
 ```
 
+### Generate your own code from that IDL
+
+`face-idl-gen`/`face-idl-binder` only ever produce FACE-standard bindings.
+For application-specific code on top of the same IDL — a transport service
+implementation, UoP skeleton classes, whatever your project needs —
+`face-codegen` renders your own Velocity (`.vm`) templates against it:
+
+```sh
+face-codegen generate -f examples/GROCERY_with_IM.face \
+    -i out/idl -t path/to/your/templates -o out/codegen
+```
+
+`-t`/`--template-dir` is required and always points at templates you supply
+yourself; unlike the FACE-standard IDL/binding templates, project-specific
+templates are intentionally not part of this distribution.
+[BLUSH](https://github.com/curtcampbell/BLUSH)'s `data-model/templates/` and
+`uop-generator/templates/` are a real, working set if you want to see the
+shape of one — including a `codegen.yaml` manifest and per-file `##!`
+directives, both described in `docs/user-guide.md`.
+
 `face-idl-gen generate` / `generate-entity-idl` (entity-reactor IDL from a
-YAML/JSON or `.face` model) and `face-codegen generate` (implementation code
-from IDL) both need a `--templates-dir`/`--template-dir` you supply yourself —
-those templates are project-specific and intentionally not part of this
-distribution; only the FACE-standard IDL and language-binding templates ship
-with it.
+YAML/JSON or `.face` model, rather than the TSS pipeline above) similarly
+need a `--templates-dir` you supply.
 
 Run any command with `--help`, or `<command> help <subcommand>`, for full
 option reference.
