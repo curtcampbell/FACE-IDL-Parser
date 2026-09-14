@@ -85,11 +85,32 @@ public class TssTypeData {
      * the last dot-separated segment, e.g. {@code "CheckoutGateway_Templates"}
      * from {@code "FACE.DM.CheckoutGateway_Templates"}.  Returns the full
      * {@code idlModule} string unchanged when it contains no dot.
+     *
+     * <p>This bare/short form is only safe for building a path or filename
+     * that mirrors it (e.g. {@code FACE/DM/<ns>/<ns>.hpp}'s aggregate-header
+     * convention) — a bare token like {@code "CheckoutGateway_Templates"} is
+     * not itself a reachable C++ name at global scope. Use {@link
+     * #getModelNamespaceQualified()} for an actual type reference (e.g.
+     * {@code ::<qualified>::<Name>}).
      */
     public String getModelNamespace() {
         if (idlModule == null) return "";
         int dot = idlModule.lastIndexOf('.');
         return dot < 0 ? idlModule : idlModule.substring(dot + 1);
+    }
+
+    /**
+     * Returns the fully-qualified C++ namespace for this type, e.g.
+     * {@code "FACE::DM::CheckoutGateway_Templates"} from {@link #idlModule}
+     * {@code "FACE.DM.CheckoutGateway_Templates"}. Unlike {@link
+     * #getModelNamespace()}'s bare last segment, this is a real, reachable
+     * name usable directly in a type reference — no {@code T_<Name>}-wrapper
+     * expansion is needed even for a {@code uop:Template} (non-composite)
+     * type, because its outer convenience-alias typedef (FACE TS 3.2 §J.8,
+     * "Rule: Template") is declared at exactly this qualified scope.
+     */
+    public String getModelNamespaceQualified() {
+        return idlModule == null ? "" : idlModule.replace(".", "::");
     }
 
     @Override

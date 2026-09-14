@@ -449,6 +449,7 @@ public class IdlGeneratorPipeline {
 
         ctx.put("connTssModPath",     tssModule.replace('.', '/'));
         ctx.put("connTssGuardPrefix", tssModule.replace('.', '_').toUpperCase(Locale.ROOT));
+        ctx.put("connTssPrefix",      "::" + tssModule.replace(".", "::") + "::");
         ctx.put("connDmModPath",      dmModule.replace('.', '/'));
         ctx.put("connDmPrefix",       "::" + dmModule.replace(".", "::") + "::");
 

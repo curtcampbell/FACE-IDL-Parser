@@ -209,6 +209,49 @@ public class TypeResolver {
         return current;
     }
 
+    /**
+     * Returns {@code true} when {@code t} is, or resolves through a typedef
+     * chain to, a primitive/void type -- e.g. {@code GUID_TYPE} (a typedef of
+     * {@code long long}). Used by {@link #paramDecl(ParameterNode)} to decide
+     * pass-by-value vs. const-ref for an {@code in} parameter: FACE TS 3.2
+     * §4.14.8.10.2's by-value rule is about the underlying scalar
+     * representation, not whether the AST node parsed as a literal primitive
+     * or a name that happens to alias one -- a plain
+     * {@code t instanceof IdlType.Primitive} check misses every typedef
+     * (checked by {@link IdlType.Scoped}), which is how {@code GUID_TYPE}
+     * ended up rendered as {@code const GUID_TYPE&} instead of {@code
+     * GUID_TYPE} even though it's a bare {@code long long} underneath.
+     *
+     * <p>Deliberately independent of {@link LanguageDescriptor#preserve_typedef_names}
+     * (unlike {@link #resolveScoped}'s Step 2): {@link #type(IdlType)} still
+     * renders the typedef's own name either way, but pass-by-value-ness must
+     * always follow the true underlying representation.
+     *
+     * @param t IDL type
+     * @return {@code true} when {@code t} bottoms out at a primitive/void
+     */
+    private boolean resolvesToScalar(IdlType t) {
+        if (t instanceof IdlType.Primitive || t instanceof IdlType.Void) return true;
+        if (!(t instanceof IdlType.Scoped s)) return false;
+
+        Set<String> visited = new HashSet<>();
+        String current = s.qualifiedName();
+        while (!visited.contains(current)) {
+            visited.add(current);
+            IdlType underlying = typedefMap.get(current);
+            if (underlying == null) return false;
+            if (underlying instanceof IdlType.Primitive || underlying instanceof IdlType.Void) {
+                return true;
+            }
+            if (underlying instanceof IdlType.Scoped us) {
+                current = us.qualifiedName();
+                continue;
+            }
+            return false; // sequence/array/string/struct-shaped underlying type
+        }
+        return false;
+    }
+
     // =========================================================================
     // Additional helper methods (callable from Velocity templates / macros)
     // =========================================================================
@@ -398,7 +441,8 @@ public class TypeResolver {
      * Returns a C++ parameter declaration applying FACE TS 3.2 §4.14.8.10.2 rules.
      *
      * <ul>
-     *   <li>{@code in} + primitive/void → by value: {@code "T name"}</li>
+     *   <li>{@code in} + primitive/void (or a typedef chain resolving to one,
+     *       e.g. {@code GUID_TYPE = long long}) → by value: {@code "T name"}</li>
      *   <li>{@code in} + other          → const ref: {@code "const T& name"}</li>
      *   <li>{@code out} / {@code inout} → mutable ref: {@code "T& name"}</li>
      * </ul>
@@ -411,7 +455,7 @@ public class TypeResolver {
         String  name = param.name();
         return switch (param.direction()) {
             case IN -> {
-                if (t instanceof IdlType.Primitive || t instanceof IdlType.Void) {
+                if (resolvesToScalar(t)) {
                     yield type(t) + " " + name;
                 }
                 yield "const " + type(t) + "& " + name;
