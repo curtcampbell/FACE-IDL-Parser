@@ -602,8 +602,67 @@ public class GenericLanguageMapper implements LanguageMapper {
                     render(pf.template, ctx, outPath);
                     LOG.info("  → " + outPath + " (post)");
                 }
+            } else if ("per_directory_tree".equals(pf.trigger)) {
+                String ext = pf.path.contains(".")
+                        ? pf.path.substring(pf.path.lastIndexOf('.')) : "";
+                emitDirectoryTreeFile(langRoot, langRoot, pf, ext, types, spec, reservedWords);
             }
         }
+    }
+
+    /**
+     * Recursively renders {@code pf.template} into every directory under (and
+     * including) {@code dir} that contains at least one generated file or
+     * subdirectory, listing those children (subdirectory names, and file stems
+     * with the {@code ext} extension stripped) under {@code pf.context_key}.
+     *
+     * <p>Used by languages whose module tree must be wired up explicitly at
+     * every level (e.g. Rust {@code mod.rs}/{@code lib.rs}), unlike Python
+     * (implicit namespace packages) or C# (namespace declared per-file, so
+     * directory nesting carries no compilation meaning).
+     */
+    private void emitDirectoryTreeFile(Path dir,
+                                       Path langRoot,
+                                       LanguageDescriptor.PostFileEntry pf,
+                                       String ext,
+                                       TypeResolver types,
+                                       IdlSpecification spec,
+                                       Set<String> reservedWords) throws Exception {
+        if (!Files.isDirectory(dir)) return;
+
+        String ownFileName = (dir.equals(langRoot) && pf.root_path != null)
+                ? pf.root_path : pf.path;
+
+        List<Path> entries;
+        try (var stream = Files.list(dir)) {
+            entries = stream.sorted().collect(java.util.stream.Collectors.toList());
+        }
+
+        List<String> children = new ArrayList<>();
+        for (Path child : entries) {
+            String fname = child.getFileName().toString();
+            if (Files.isDirectory(child)) {
+                children.add(fname);
+                emitDirectoryTreeFile(child, langRoot, pf, ext, types, spec, reservedWords);
+            } else if (!ext.isEmpty() && fname.endsWith(ext)
+                    && !fname.equals(pf.path) && !fname.equals(pf.root_path)) {
+                children.add(fname.substring(0, fname.length() - ext.length()));
+            }
+        }
+        if (children.isEmpty()) return;
+
+        Path outPath = dir.resolve(ownFileName);
+        VelocityContext ctx = new VelocityContext();
+        ctx.put("types",         types);
+        ctx.put("spec",          spec);
+        ctx.put("reservedWords", reservedWords);
+        ctx.put("langName",      descriptor.name);
+        if (pf.context_key != null) {
+            ctx.put(pf.context_key, children);
+        }
+        putLegacyHelper(ctx, List.of());
+        render(pf.template, ctx, outPath);
+        LOG.info("  → " + outPath + " (post, directory-tree)");
     }
 
     // =========================================================================

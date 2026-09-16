@@ -1,0 +1,34 @@
+## union.rs.vm
+## Generates a Rust enum (data-carrying) for an IDL union declaration.
+##
+## Unlike the C# mapping (a sealed class with a discriminant property and
+## per-branch typed accessors — C# has no idiomatic discriminated-union type;
+## see docs/csharp-binding-guide.md §14), Rust's own `enum` *is* a tagged
+## union, so this is a direct, idiomatic mapping rather than a workaround.
+## The IDL discriminant value itself is not preserved as data: Rust manages
+## the enum's tag internally, so match on the variant instead of comparing
+## against the original switch value.
+##
+## Not derived: Default. Rust's #[default] attribute is only legal on a
+## unit variant (rustc: "the #[default] attribute may only be used on unit
+## enum variants"), and every union case here carries a payload -- so, unlike
+## enum.rs.vm's plain C-like enum, no case can ever be marked #[default].
+## This is also why struct.rs.vm does not derive Default: a struct embedding
+## one of these unions as a field would fail to derive it transitively.
+##
+## Context:
+##   $union — UnionNode
+##   $types — TypeResolver
+##
+#![allow(non_snake_case, non_camel_case_types)]
+##
+/// Rust enum for IDL union `${union.name}`.
+/// IDL discriminant type: `#rustType($union.switchType)` (not preserved as
+/// data — match on the variant instead of the original switch value).
+#[derive(Debug, Clone, PartialEq)]
+pub enum $types.safeName($union.name) {
+#foreach($case in $union.cases)
+    /// #if($case.default)Default case.#{else}IDL label(s): $case.labels#end
+    $types.toPascalCase($case.name)(#rustType($case.type)),
+#end
+}

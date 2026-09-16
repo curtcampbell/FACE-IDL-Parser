@@ -1,0 +1,29 @@
+#![allow(non_snake_case)]
+//! FACE-standard error type used by every generated Rust interface trait /
+//! callback signature.
+//!
+//! Rust has no exceptions. FACE TS 3.2 §K.4.2 (`BAD_PARAM`) and §K.4.3
+//! (`DATA_CONVERSION`) are therefore surfaced as an explicit
+//! `Result<T, FaceError>` on every generated operation, rather than as a
+//! checked throw (Java) or a documented unchecked exception (C#) — see
+//! docs/rust-binding-guide.md.
+
+/// FACE-standard error raised by a generated interface operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FaceError {
+    /// FACE TS 3.2 §K.4.2 `BAD_PARAM` — an invalid parameter was supplied.
+    BadParam(String),
+    /// FACE TS 3.2 §K.4.3 `DATA_CONVERSION` — a data-conversion error occurred.
+    DataConversion(String),
+}
+
+impl std::fmt::Display for FaceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FaceError::BadParam(reason) => write!(f, "BAD_PARAM: {}", reason),
+            FaceError::DataConversion(reason) => write!(f, "DATA_CONVERSION: {}", reason),
+        }
+    }
+}
+
+impl std::error::Error for FaceError {}

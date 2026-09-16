@@ -320,16 +320,37 @@ public class LanguageDescriptor {
     public static class PostFileEntry {
 
         /**
-         * Emission trigger.  Currently supported: {@code "per_output_directory"}
-         * (rendered once per directory that received at least one construct).
+         * Emission trigger.  Supported values:
+         * <ul>
+         *   <li>{@code "per_output_directory"} — rendered once per directory that
+         *       directly received at least one construct (leaf directories only).</li>
+         *   <li>{@code "per_directory_tree"} — rendered once per directory anywhere
+         *       under the language output root that contains at least one generated
+         *       file or subdirectory, listing those children under {@link #context_key}
+         *       (subdirectory names and file stems, extension stripped). Used by
+         *       module-tree languages (e.g. Rust's {@code mod.rs}/{@code lib.rs}) that
+         *       need every intermediate namespace level wired up, not just leaves —
+         *       unlike Python/C# where the file's own namespace declaration (or PEP 420
+         *       implicit packages) makes intermediate index files unnecessary.</li>
+         * </ul>
          */
         public String trigger;
 
         /** Template filename. */
         public String template;
 
-        /** Output filename, relative to the triggered directory. */
+        /**
+         * Output filename, relative to the triggered directory (or relative to each
+         * directory in the tree, for {@code per_directory_tree}).
+         */
         public String path;
+
+        /**
+         * {@code per_directory_tree} only: overrides {@link #path} for the language
+         * output root itself (e.g. {@code "lib.rs"} vs. {@code "mod.rs"} for every
+         * other directory). Ignored by other triggers and when {@code null}.
+         */
+        public String root_path;
 
         /**
          * Context key under which the accumulated data is exposed to the template

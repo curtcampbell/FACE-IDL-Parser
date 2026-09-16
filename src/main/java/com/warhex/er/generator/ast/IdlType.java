@@ -47,6 +47,9 @@ public abstract class IdlType {
 
         public PrimitiveKind kind() { return kind; }
 
+        // JavaBean alias for Velocity 2.x property access ($t.kind)
+        public PrimitiveKind getKind() { return kind; }
+
         @Override
         public String toString() { return kind.name().toLowerCase().replace('_', ' '); }
     }
@@ -67,6 +70,9 @@ public abstract class IdlType {
         }
 
         public String qualifiedName() { return qualifiedName; }
+
+        // JavaBean alias for Velocity 2.x property access ($t.qualifiedName)
+        public String getQualifiedName() { return qualifiedName; }
 
         @Override
         public String toString() { return qualifiedName; }
@@ -94,6 +100,10 @@ public abstract class IdlType {
         public IdlType elementType() { return elementType; }
         public OptionalInt bound()   { return bound; }
 
+        // JavaBean aliases for Velocity 2.x property access ($t.elementType, $t.bound)
+        public IdlType getElementType() { return elementType; }
+        public OptionalInt getBound()   { return bound; }
+
         @Override
         public String toString() {
             return bound.isPresent()
@@ -117,6 +127,9 @@ public abstract class IdlType {
 
         public OptionalInt bound() { return bound; }
 
+        // JavaBean alias for Velocity 2.x property access ($t.bound)
+        public OptionalInt getBound() { return bound; }
+
         @Override
         public String toString() {
             return bound.isPresent() ? "string<" + bound.getAsInt() + ">" : "string";
@@ -137,6 +150,9 @@ public abstract class IdlType {
         public WideStr() { this(OptionalInt.empty()); }
 
         public OptionalInt bound() { return bound; }
+
+        // JavaBean alias for Velocity 2.x property access ($t.bound)
+        public OptionalInt getBound() { return bound; }
 
         @Override
         public String toString() {
@@ -166,6 +182,10 @@ public abstract class IdlType {
 
         public IdlType elementType()    { return elementType; }
         public List<Integer> dimensions() { return dimensions; }
+
+        // JavaBean aliases for Velocity 2.x property access ($t.elementType, $t.dimensions)
+        public IdlType getElementType()    { return elementType; }
+        public List<Integer> getDimensions() { return dimensions; }
 
         @Override
         public String toString() {

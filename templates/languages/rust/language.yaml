@@ -1,0 +1,215 @@
+name: Rust
+output_subdirectory: rust
+
+# ── Macro library ─────────────────────────────────────────────────────────────
+macro_library: macros.vm
+
+# ── Iteration strategy ────────────────────────────────────────────────────────
+# One .rs file per public type, mirroring the IDL module nesting as directories
+# (same convention as the Python and C# mappings). Module identity for Rust
+# comes from *file location* in the generated tree (see mod.rs.vm), not from an
+# embedded namespace/mod block inside each file — so, unlike C#, there is no
+# $namespaceName wrapper in these templates.
+iteration:
+  strategy: per_construct
+  path: "{modules}/{name}.rs"
+
+# ── Template routing ──────────────────────────────────────────────────────────
+templates:
+  struct:
+    template: struct.rs.vm
+  enum:
+    template: enum.rs.vm
+  interface:
+    template: interface.rs.vm
+  template_inst:
+    template: template_inst.rs.vm
+  union:
+    template: union.rs.vm
+  const:
+    template: const.rs.vm
+
+# ── Type maps (used by TypeResolver / $types) ─────────────────────────────────
+# Pragmatic non-FACE mapping (FACE TS 3.2 does not define a Rust binding) —
+# see docs/rust-binding-guide.md.
+primitive_types:
+  SHORT: i16
+  INT16: i16
+  LONG: i32
+  INT32: i32
+  LONG_LONG: i64
+  INT64: i64
+  UNSIGNED_SHORT: u16
+  UINT16: u16
+  UNSIGNED_LONG: u32
+  UINT32: u32
+  UNSIGNED_LONG_LONG: u64
+  UINT64: u64
+  FLOAT: f32
+  DOUBLE: f64
+  LONG_DOUBLE: f64
+  CHAR: u8
+  WIDE_CHAR: u16
+  OCTET: u8
+  INT8: u8
+  UINT8: u8
+  BOOLEAN: bool
+
+parameterized_types:
+  string: String
+  wstring: String
+  # Sequence bound / array dimensions are not preserved in the Rust type —
+  # same limitation as the Python (List[T]) and C# (T[]) mappings.
+  sequence: "Vec<{element}>"
+  array: "Vec<{element}>"
+
+# FACE namespace typedef aliases → Rust types
+scoped_overrides:
+  "::FACE::GUID_TYPE": u64
+  "FACE::GUID_TYPE": u64
+  "::FACE::MESSAGE_INSTANCE_GUID_TYPE": u64
+  "FACE::MESSAGE_INSTANCE_GUID_TYPE": u64
+  "::FACE::SYSTEM_TIME_TYPE": i64
+  "FACE::SYSTEM_TIME_TYPE": i64
+  "::FACE::DURATION_TIME_TYPE": i64
+  "FACE::DURATION_TIME_TYPE": i64
+  "::FACE::ABSOLUTE_TIME_TYPE": i64
+  "FACE::ABSOLUTE_TIME_TYPE": i64
+  "::FACE::TIMEOUT_TYPE": i64
+  "FACE::TIMEOUT_TYPE": i64
+  "::FACE::TRANSACTION_ID_TYPE": i64
+  "FACE::TRANSACTION_ID_TYPE": i64
+  "::FACE::SEQUENCE_NUMBER_TYPE": i64
+  "FACE::SEQUENCE_NUMBER_TYPE": i64
+  "::FACE::TS_TYPE": i64
+  "FACE::TS_TYPE": i64
+  "::FACE::Short": i16
+  "FACE::Short": i16
+  "::FACE::Long": i32
+  "FACE::Long": i32
+  "::FACE::LongLong": i64
+  "FACE::LongLong": i64
+  "::FACE::UnsignedShort": u16
+  "FACE::UnsignedShort": u16
+  "::FACE::UnsignedLong": u32
+  "FACE::UnsignedLong": u32
+  "::FACE::UnsignedLongLong": u64
+  "FACE::UnsignedLongLong": u64
+  "::FACE::Octet": u8
+  "FACE::Octet": u8
+  "::FACE::WChar": u16
+  "FACE::WChar": u16
+  "::FACE::Float": f32
+  "FACE::Float": f32
+  "::FACE::Double": f64
+  "FACE::Double": f64
+  "::FACE::LongDouble": f64
+  "FACE::LongDouble": f64
+  "::FACE::Boolean": bool
+  "FACE::Boolean": bool
+  "::FACE::Char": u8
+  "FACE::Char": u8
+  "::FACE::STRING_TYPE": String
+  "FACE::STRING_TYPE": String
+  "::FACE::WSTRING_TYPE": String
+  "FACE::WSTRING_TYPE": String
+  "::FACE::UNBOUNDED_STRING_TYPE": String
+  "FACE::UNBOUNDED_STRING_TYPE": String
+
+# Rust types that already implement Copy/Default without our help — used by
+# $types.isImmutable() (harmless to Rust templates that don't call it; kept
+# for consistency with the other descriptors).
+immutable_types:
+  - i8
+  - u8
+  - i16
+  - u16
+  - i32
+  - u32
+  - i64
+  - u64
+  - f32
+  - f64
+  - bool
+  - char
+  - String
+boxed_types: {}
+
+# ── Naming ────────────────────────────────────────────────────────────────────
+# Rust raw identifiers (r#type, r#move, ...) sidestep keyword collisions
+# without renaming the identifier, unlike Java/C#'s "FACE_" prefix convention.
+# Not usable for "self"/"Self"/"super"/"crate" — deliberately left off the
+# reserved_words list below since FACE IDL identifiers are always meaningful
+# snake_case/SCREAMING_SNAKE_CASE names and never collide with those five in
+# practice.
+reserved_prefix: "r#"
+
+# Rust 2021 strict + reserved keywords (excluding self/Self/super/crate — see above)
+reserved_words:
+  - as
+  - async
+  - await
+  - abstract
+  - become
+  - box
+  - break
+  - const
+  - continue
+  - do
+  - dyn
+  - else
+  - enum
+  - extern
+  - false
+  - final
+  - fn
+  - for
+  - if
+  - impl
+  - in
+  - let
+  - loop
+  - macro
+  - match
+  - mod
+  - move
+  - mut
+  - override
+  - priv
+  - pub
+  - ref
+  - return
+  - static
+  - struct
+  - trait
+  - true
+  - try
+  - type
+  - typeof
+  - unsafe
+  - union
+  - unsized
+  - use
+  - virtual
+  - where
+  - while
+  - yield
+
+# ── Static files (FACE §K.4 error type) ───────────────────────────────────────
+static_files:
+  - template: error.rs.vm
+    path: face_error.rs
+    skip_if_exists: true
+
+# ── Post files ────────────────────────────────────────────────────────────────
+# Rust requires an explicit `mod` declaration at every level of the tree (there
+# is no PEP-420-style implicit namespace package, and no per-file namespace
+# declaration like C#). per_directory_tree walks the whole output tree after
+# the AST walk and emits one index file per non-empty directory; the language
+# output root gets root_path ("lib.rs") instead of "mod.rs".
+post_files:
+  - trigger: per_directory_tree
+    template: mod.rs.vm
+    path: mod.rs
+    root_path: lib.rs
+    context_key: childModules

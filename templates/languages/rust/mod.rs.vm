@@ -1,0 +1,8 @@
+#![allow(non_snake_case)]
+// Auto-generated module index — declares every generated submodule beneath
+// this directory (module names mirror the IDL module/type names verbatim,
+// hence the non_snake_case allow above). Regenerated on every run; do not
+// hand-edit — see docs/rust-binding-guide.md for how this file is used.
+#foreach($m in $childModules)
+pub mod ${m};
+#end

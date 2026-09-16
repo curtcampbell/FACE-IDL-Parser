@@ -129,6 +129,41 @@ class LanguageBindingIntegrationTest {
         String initPy = Files.readString(pyBase.resolve("__init__.py"));
         assertTrue(initPy.contains("from .TrackEntity import TrackEntity"),
                 "__init__.py should re-export TrackEntity");
+
+        // Assert — Rust files
+        Path rustBase = tempDir.resolve("rust/FACE/DM/SampleModel");
+        assertRsExists(rustBase, "GeoPosition");
+        assertRsExists(rustBase, "ThreatLevel");
+        assertRsExists(rustBase, "ThreatEntity");
+        assertRsExists(rustBase, "TrackEntity");
+        assertRsExists(rustBase, "WaypointEntity");
+        assertTrue(Files.exists(rustBase.resolve("mod.rs")),
+                "FACE/DM/SampleModel/mod.rs must exist");
+        assertTrue(Files.exists(tempDir.resolve("rust/lib.rs")),
+                "rust/lib.rs crate root must exist");
+        assertTrue(Files.exists(tempDir.resolve("rust/face_error.rs")),
+                "rust/face_error.rs must exist");
+
+        // Spot-check TrackEntity.rs content
+        String trackRs = Files.readString(rustBase.resolve("TrackEntity.rs"));
+        assertTrue(trackRs.contains("pub struct TrackEntity"),
+                "TrackEntity.rs should declare pub struct TrackEntity");
+        assertTrue(trackRs.contains("super::GeoPosition::GeoPosition"),
+                "TrackEntity.rs should reference the sibling GeoPosition module");
+        assertTrue(trackRs.contains("pub heading_deg: f32"),
+                "TrackEntity.rs should have pub heading_deg: f32 field");
+
+        // Spot-check ThreatLevel.rs (C-like enum)
+        String threatLevelRs = Files.readString(rustBase.resolve("ThreatLevel.rs"));
+        assertTrue(threatLevelRs.contains("pub enum ThreatLevel"),
+                "ThreatLevel.rs should declare pub enum ThreatLevel");
+        assertTrue(threatLevelRs.contains("THREAT_UNKNOWN"),
+                "ThreatLevel.rs should list THREAT_UNKNOWN variant");
+
+        // Spot-check FACE/DM/SampleModel/mod.rs declares the generated modules
+        String smModRs = Files.readString(rustBase.resolve("mod.rs"));
+        assertTrue(smModRs.contains("pub mod TrackEntity;"),
+                "FACE/DM/SampleModel/mod.rs should declare pub mod TrackEntity;");
     }
 
     // -----------------------------------------------------------------------
@@ -172,6 +207,15 @@ class LanguageBindingIntegrationTest {
         assertTrue(Files.exists(pyBase.resolve("__init__.py")),
                 "__init__.py must exist");
 
+        Path rustBase = tempDir.resolve("rust/FACE/DM/SampleModel");
+        assertRsExists(rustBase, "GeoPosition");
+        assertRsExists(rustBase, "TrackEntity");
+        assertRsExists(rustBase, "ThreatEntity");
+        assertRsExists(rustBase, "WaypointEntity");
+        assertRsExists(rustBase, "ThreatLevel");
+        assertTrue(Files.exists(tempDir.resolve("rust/lib.rs")),
+                "rust/lib.rs crate root must exist");
+
         // Structural content checks
         String trackHpp = Files.readString(cppBase.resolve("TrackEntity.hpp"));
         assertTrue(trackHpp.contains("struct TrackEntity"),   "C++ struct declared");
@@ -180,6 +224,9 @@ class LanguageBindingIntegrationTest {
         String trackPy = Files.readString(pyBase.resolve("TrackEntity.py"));
         assertTrue(trackPy.contains("@dataclass"),            "Python @dataclass present");
         assertTrue(trackPy.contains("class TrackEntity"),     "Python class declared");
+
+        String trackRs = Files.readString(rustBase.resolve("TrackEntity.rs"));
+        assertTrue(trackRs.contains("pub struct TrackEntity"), "Rust struct declared");
     }
 
     // -----------------------------------------------------------------------
@@ -250,11 +297,23 @@ class LanguageBindingIntegrationTest {
         assertTrue(Files.exists(pyBase.resolve("__init__.py")),
                 "__init__.py must exist");
 
+        // ---- Rust assertions ----
+        Path rustBase = tempDir.resolve("rust/FACE/DM/SampleModel");
+        assertRsExists(rustBase, "GeoPosition");
+        assertRsExists(rustBase, "ThreatEntity");
+        assertTrue(Files.exists(tempDir.resolve("rust/lib.rs")),
+                "rust/lib.rs crate root must exist");
+        assertTrue(Files.exists(rustBase.resolve("mod.rs")),
+                "FACE/DM/SampleModel/mod.rs must exist");
+
         // ---- Negative: framework types must NOT appear in C# or Java output ----
         // (they were previously rendered when merged spec was walked directly)
         Path csFramework = tempDir.resolve("csharp/FACE/TSS");
         assertFalse(Files.exists(csFramework.resolve("QoS_Element.cs")),
                 "C# output must not contain TSS framework type QoS_Element");
+        Path rustFramework = tempDir.resolve("rust/FACE/TSS");
+        assertFalse(Files.exists(rustFramework.resolve("QoS_Element.rs")),
+                "Rust output must not contain TSS framework type QoS_Element");
     }
 
     // -----------------------------------------------------------------------
@@ -319,6 +378,11 @@ class LanguageBindingIntegrationTest {
     private void assertPyExists(Path dir, String typeName) {
         Path p = dir.resolve(typeName + ".py");
         assertTrue(Files.exists(p), typeName + ".py should exist at " + p);
+    }
+
+    private void assertRsExists(Path dir, String typeName) {
+        Path p = dir.resolve(typeName + ".rs");
+        assertTrue(Files.exists(p), typeName + ".rs should exist at " + p);
     }
 
     /**

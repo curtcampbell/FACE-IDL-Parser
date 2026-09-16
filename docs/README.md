@@ -71,6 +71,12 @@ distinction between the language binding pipeline and `face-codegen generate`.
 Section 2 (Activating C# Generation) updated to remove stale `er-generator`
 commands. All other sections verified accurate.
 
+**`rust-binding-guide.md`** — Rust language binding guide for UoP developers.
+New pragmatic non-FACE mapping (`templates/languages/rust/`), added alongside
+the existing C#/Python mappings — see the guide for how it differs from them
+(unions map to a real Rust tagged enum, errors are `Result<T, FaceError>`
+instead of exceptions, structs are values with no copy-constructor footgun).
+
 **`template-entity-source-design.md`** — Design specification for the template
 entity source feature (`FaceTemplateEntityReader`). Documents the two-pass
 registration/field-resolution algorithm, the `--entities` and `--entity-source`
