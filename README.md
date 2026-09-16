@@ -12,8 +12,8 @@ Three command-line tools, built as a single Maven project:
 
 | Command           | Reads                                             | Produces                                                     |
 |-------------------|----------------------------------------------------|----------------------------------------------------------------|
-| `face-idl-gen`    | Entity models (YAML/JSON) or `.face` XMI files    | FACE IDL (data-model IDL, TSS/TypedTS IDL) — and, when given a language flag (`--cpp`, `--java`, `--python`, `--csharp`), bindings for that IDL in the same run |
-| `face-idl-binder` | FACE IDL you already have (hand-written, or from a previous run) | Language bindings (C++, Java, Python, C#), without regenerating the IDL |
+| `face-idl-gen`    | Entity models (YAML/JSON) or `.face` XMI files    | FACE IDL (data-model IDL, TSS/TypedTS IDL) — and, when given a language flag (`--cpp`, `--java`, `--python`, `--csharp`, `--rust`), bindings for that IDL in the same run |
+| `face-idl-binder` | FACE IDL you already have (hand-written, or from a previous run) | Language bindings (C++, Java, Python, C#, Rust), without regenerating the IDL |
 | `face-codegen`    | FACE IDL + optional `.face` model + your Velocity templates | Application code (transport services, UoP skeletons, etc.) |
 
 `face-idl-gen` is the primary entry point: it generates FACE-standard IDL
@@ -112,10 +112,10 @@ C++ headers (`out/cpp/face-model/include/FACE/DM/...`, `FACE/TSS/...`) —
 pass `--idl-only`.
 
 `--cpp` is one of several language flags `generate-tss-idl` (and every other
-IDL-consuming command below) accepts: `--java`, `--python`, and `--csharp`
-also generate that language's bindings, `--all-face` generates C++ and Java
-together (the FACE-standard pair, and the default when no flag is given), and
-`--all-languages` generates all four. Most current consumers (e.g.
+IDL-consuming command below) accepts: `--java`, `--python`, `--csharp`, and
+`--rust` also generate that language's bindings, `--all-face` generates C++
+and Java together (the FACE-standard pair, and the default when no flag is
+given), and `--all-languages` generates all five. Most current consumers (e.g.
 [BLUSH](https://github.com/curtcampbell/BLUSH), a C++17 FACE library built on
 this tool) only exercise `--cpp` today — that's a reflection of what's been
 built on top of the output so far, not a limit of the tool, and is likely to

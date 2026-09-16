@@ -673,7 +673,7 @@ directory, so they work correctly regardless of the current working directory.
 `code_generator/templates/` ships three categories of template sets. Understanding
 which pipeline drives each is important for template authoring.
 
-### Language binding templates — `templates/languages/{cpp,csharp,java,python}/`
+### Language binding templates — `templates/languages/{cpp,csharp,java,python,rust}/`
 
 These templates are for the **language binding code generator**, not for
 `face-codegen generate`. Each language directory contains:
@@ -691,7 +691,7 @@ These templates are for the **language binding code generator**, not for
 | Strategy | Description |
 |---|---|
 | `per_idl_file` | One output file per `.idl` source file; output path derived from module namespace. C++ uses this. |
-| `per_construct` | One output file per IDL construct (struct, enum, interface, etc.). C#, Java, Python use this. |
+| `per_construct` | One output file per IDL construct (struct, enum, interface, etc.). C#, Java, Python, Rust use this. |
 
 ### Entity Reactor IDL generation templates — `templates/entity-reactor-idl/`
 

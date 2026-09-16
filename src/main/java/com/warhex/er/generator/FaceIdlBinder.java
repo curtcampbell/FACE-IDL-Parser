@@ -115,7 +115,7 @@ public class FaceIdlBinder implements Runnable {
                 description = "Root output directory. Created if absent.")
         private Path outputDir;
 
-        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#.")
+        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#, Rust.")
         private boolean allLanguages;
         @Option(names = {"--all-face"},
                 description = "Generate C++ and Java (FACE standard). Default when no flag given.")
@@ -126,6 +126,9 @@ public class FaceIdlBinder implements Runnable {
         @Option(names = {"--csharp"},
                 description = "Generate C# bindings (non-FACE; excluded from --all-face).")
         private boolean genCsharp;
+        @Option(names = {"--rust"},
+                description = "Generate Rust bindings (non-FACE; excluded from --all-face).")
+        private boolean genRust;
 
         @Override
         public Integer call() throws Exception {
@@ -147,7 +150,7 @@ public class FaceIdlBinder implements Runnable {
             }
 
             List<LanguageMapper> mappers =
-                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp);
+                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp, genRust);
             LOG.info("Active mappers: " + mappers.stream().map(LanguageMapper::languageName).toList());
             new LanguageBindingPipeline(mappers).generate(result, outputDir);
             LOG.info("Language binding complete.");

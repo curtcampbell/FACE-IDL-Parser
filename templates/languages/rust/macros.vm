@@ -1,0 +1,189 @@
+## macros.vm — Rust language macro library
+## Loaded before every Rust template (macro_library: macros.vm in language.yaml).
+##
+## Convention: content-producing lines end with ## to suppress trailing newlines.
+
+## ---------------------------------------------------------------------------
+## rustType($t) — resolves an IdlType to a fully self-contained Rust type
+## expression. No `use` import is ever required at the call site:
+##
+##   - Primitive / Str / WideStr -> $types.type() verbatim (already a plain
+##     Rust type: i32, f64, bool, String, ...).
+##   - Sequence / Array -> Vec<#rustType(element)>, resolved recursively so a
+##     scoped element type is also rewritten. The sequence bound and the
+##     array's fixed dimensions are not preserved (same limitation as the
+##     Python List[T] / C# T[] mappings).
+##   - Scoped -> #rustScopedType($types.type($t)) (see below).
+## ---------------------------------------------------------------------------
+#macro(rustType $t)
+#set($__tn = $t.class.simpleName)
+#if($__tn == "Sequence" || $__tn == "Array")
+Vec<#rustType($t.elementType)>##
+#elseif($__tn == "Scoped")
+#rustScopedType($types.type($t))##
+#else
+$types.type($t)##
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## rustScopedType($raw) — rewrites a resolved Scoped-type string into a
+## self-contained Rust path. $raw is whatever $types.type() already resolved
+## the Scoped reference to:
+##
+##   - A scoped_overrides / typedef-expanded primitive (e.g. "i32", "String")
+##     is a FACE namespace alias, not a locally-generated type — returned
+##     unchanged.
+##   - A typedef-expanded sequence/array (e.g. "Vec<ChangedField>" — $raw is a
+##     Scoped reference to a typedef whose underlying type is itself a
+##     sequence/array; TypeResolver flattens that whole chain into one string
+##     before this macro ever sees it) has its inner element type rewritten
+##     recursively, since the element may itself be a locally-generated type.
+##   - A fully-qualified reference (contains "::", e.g.
+##     "::FACE::DM::SampleModel::GeoPosition") becomes an absolute crate path:
+##     "crate::FACE::DM::SampleModel::GeoPosition::GeoPosition". The doubled
+##     final segment is required because every generated type lives in its
+##     own same-named module file (see mod.rs.vm) — "FACE::DM::SampleModel" is
+##     the *module* path, and the trailing "::GeoPosition" reaches the type
+##     declared inside the "GeoPosition" module.
+##   - A bare (unqualified) reference is normally a sibling type declared in
+##     the same IDL module as the referencing construct — therefore the same
+##     output directory / same parent Rust module:
+##     "super::GeoPosition::GeoPosition". The one exception is a reference to
+##     another definition substituted from the *same* template instantiation
+##     (e.g. a TypedTS operation parameter of the sibling Read_Callback
+##     interface substituted into the same file) — template_inst.rs.vm sets
+##     $localSiblingNames to that file's own item names before calling into
+##     this macro, and such a name resolves as a bare in-file reference
+##     instead, since it isn't a separate module/file at all.
+##
+## This requires the generated tree to be mounted as a crate's own module
+## root so "crate::" absolute paths resolve — see docs/rust-binding-guide.md.
+## ---------------------------------------------------------------------------
+#macro(rustScopedType $raw)
+#set($__rustPrimitives = ["i8","u8","i16","u16","i32","u32","i64","u64","f32","f64","bool","char","String","()"])
+#if($__rustPrimitives.contains($raw))
+$raw##
+#elseif($raw.startsWith("Vec<") && $raw.endsWith(">"))
+#set($__inner = $raw.substring(4, $raw.length() - 1))
+Vec<#rustScopedType($__inner)>##
+#elseif($raw.contains("::"))
+#set($__stripped = $raw)
+#if($__stripped.startsWith("::"))
+#set($__stripped = $__stripped.substring(2))
+#end
+#set($__segs = $__stripped.split("::"))
+#set($__last = $__segs[$__segs.size() - 1])
+crate::${__stripped}::${__last}##
+#elseif($localSiblingNames && $localSiblingNames.contains($raw))
+$raw##
+#else
+super::${raw}::${raw}##
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## idlParamSummary($op) — "in GeoPosition pos, out ThreatLevel level" (doc comments)
+## ---------------------------------------------------------------------------
+#macro(idlParamSummary $op)
+#set($__first = true)
+#foreach($__p in $op.parameters)
+#if(!$__first), #end##
+${__p.direction.toString().toLowerCase()} #rustType($__p.type) $__p.name##
+#set($__first = false)
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## rustLogicalReturn($op) — () / T / (T1, T2, ...)
+## out/inout params fold into the return; multiple outputs become a tuple.
+## Mirrors the C# mapping's csharpReturnType, minus the named-tuple sugar
+## (stable Rust has no named tuple fields) — see idlParamSummary for names.
+## ---------------------------------------------------------------------------
+#macro(rustLogicalReturn $op)
+#set($__outs = [])
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() != "IN")
+#set($__d = $__outs.add($__p))
+#end
+#end
+#set($__hasRet = false)
+#if($op.returnType.class.simpleName != "Void")
+#set($__hasRet = true)
+#end
+#set($__total = $__outs.size())
+#if($__hasRet)
+#set($__total = $__total + 1)
+#end
+#if($__total == 0)
+()##
+#elseif($__total == 1)
+#if($__hasRet)
+#rustType($op.returnType)##
+#else
+#rustType($__outs.get(0).type)##
+#end
+#else
+(#if($__hasRet)#rustType($op.returnType)#if(!$__outs.isEmpty()), #end#end#foreach($__p in $__outs)#rustType($__p.type)#if(!$foreach.last), #end#end)##
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## rustReturnType($op) — Result<rustLogicalReturn($op), crate::face_error::FaceError>
+##
+## Every generated operation returns a Result: FACE TS operations may raise
+## BAD_PARAM / DATA_CONVERSION (§K.4.2 / §K.4.3), and Rust has no exceptions
+## to carry that implicitly — contrast with the Java (checked throws) and C#
+## (documented unchecked exceptions) mappings. FaceError is fully qualified
+## so no `use` is required at any call site (see error.rs.vm).
+## ---------------------------------------------------------------------------
+#macro(rustReturnType $op)
+Result<#rustLogicalReturn($op), crate::face_error::FaceError>##
+#end
+
+## ---------------------------------------------------------------------------
+## inputParamList($op) — "name1: T1, name2: T2, ..." for in/inout params.
+## out-only params are excluded (they appear only in the return type).
+## Names are used as written — FACE IDL identifiers are already snake_case.
+## ---------------------------------------------------------------------------
+#macro(inputParamList $op)
+#set($__first = true)
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() == "IN" || $__p.direction.toString() == "INOUT")
+#if(!$__first), #end##
+$types.safeName($__p.name): #rustType($__p.type)##
+#set($__first = false)
+#end
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## paramTypesOnly($op) — "T1, T2, ..." for in/inout params, types only (used
+## by the boxed-closure type alias for a single-operation interface, which
+## has no parameter names in its signature).
+## ---------------------------------------------------------------------------
+#macro(paramTypesOnly $op)
+#set($__first = true)
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() == "IN" || $__p.direction.toString() == "INOUT")
+#if(!$__first), #end##
+#rustType($__p.type)##
+#set($__first = false)
+#end
+#end
+#end
+
+## ---------------------------------------------------------------------------
+## selfAndParams($op) — "&mut self" or "&mut self, name1: T1, ..." for a
+## trait method signature (multi-operation interface).
+## ---------------------------------------------------------------------------
+#macro(selfAndParams $op)
+&mut self##
+#set($__any = false)
+#foreach($__p in $op.parameters)
+#if($__p.direction.toString() == "IN" || $__p.direction.toString() == "INOUT")
+#set($__any = true)
+#end
+#end
+#if($__any), #inputParamList($op)#end##
+#end

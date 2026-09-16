@@ -683,7 +683,7 @@ plain `.vm` Velocity templates driven by the `CodeGenPipeline`.
 
 ### `language.yaml`-driven templates (language binding generator)
 
-Templates in `templates/languages/{cpp,csharp,java,python}/` are driven by
+Templates in `templates/languages/{cpp,csharp,java,python,rust}/` are driven by
 `language.yaml` routing configuration. Key fields in `language.yaml`:
 
 | Field | Description |

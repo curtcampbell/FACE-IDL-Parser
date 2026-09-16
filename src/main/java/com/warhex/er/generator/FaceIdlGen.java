@@ -188,7 +188,7 @@ public class FaceIdlGen implements Runnable {
                 description = "Generate IDL only; skip language binding generation.")
         private boolean idlOnly;
 
-        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#.")
+        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#, Rust.")
         private boolean allLanguages;
         @Option(names = {"--all-face"},      description = "Generate C++ and Java (default).")
         private boolean allFace;
@@ -198,6 +198,9 @@ public class FaceIdlGen implements Runnable {
         @Option(names = {"--csharp"},
                 description = "Generate C# bindings (non-FACE; excluded from --all-face).")
         private boolean genCsharp;
+        @Option(names = {"--rust"},
+                description = "Generate Rust bindings (non-FACE; excluded from --all-face).")
+        private boolean genRust;
 
         @Override
         public Integer call() throws Exception {
@@ -241,7 +244,7 @@ public class FaceIdlGen implements Runnable {
             // Language binding is opt-in: only run when at least one language flag
             // (--cpp, --java, --all-face, --all-languages, --csharp, --python) is set.
             // Passing --idl-only also suppresses it.
-            boolean anyLanguage = allLanguages || allFace || genCpp || genJava || genPython || genCsharp;
+            boolean anyLanguage = allLanguages || allFace || genCpp || genJava || genPython || genCsharp || genRust;
             if (idlOnly || !anyLanguage) {
                 LOG.info("Skipping language binding (no language flags set or --idl-only).");
                 return 0;
@@ -253,7 +256,7 @@ public class FaceIdlGen implements Runnable {
             LOG.info("Binding data-model IDL from " + dataModelIdlDir);
             IdlParseResult result = new IdlDirectoryParser(searchDirs).parse(dataModelIdlDir);
             List<LanguageMapper> mappers =
-                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp);
+                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp, genRust);
             LOG.info("Active mappers: " + mappers.stream().map(LanguageMapper::languageName).toList());
             new LanguageBindingPipeline(mappers).generateIntoSubdir(result, outputDir, "face-model");
             LOG.info("face-model data-model language binding complete.");
@@ -326,7 +329,7 @@ public class FaceIdlGen implements Runnable {
                             + "Only valid when MODEL is a .face file.")
         private String entitySourceGroup;
 
-        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#.")
+        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#, Rust.")
         private boolean allLanguages;
         @Option(names = {"--all-face"},      description = "Generate C++ and Java (default).")
         private boolean allFace;
@@ -336,6 +339,9 @@ public class FaceIdlGen implements Runnable {
         @Option(names = {"--csharp"},
                 description = "Generate C# bindings (non-FACE; excluded from --all-face).")
         private boolean genCsharp;
+        @Option(names = {"--rust"},
+                description = "Generate Rust bindings (non-FACE; excluded from --all-face).")
+        private boolean genRust;
 
         @Override
         public Integer call() throws Exception {
@@ -351,7 +357,7 @@ public class FaceIdlGen implements Runnable {
             List<Path> searchDirs = FaceToolUtils.buildSearchDirs(faceIdlDir, includePaths);
             IdlParseResult result = new IdlDirectoryParser(searchDirs).parse(idlOutDir);
             List<LanguageMapper> mappers =
-                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp);
+                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp, genRust);
             LOG.info("Active mappers: " + mappers.stream().map(LanguageMapper::languageName).toList());
             for (LanguageMapper mapper : mappers) {
                 mapper.mapDirect(result, outputDir.resolve(mapper.outputSubdirectory()).resolve("entity-reactor"));
@@ -387,7 +393,7 @@ public class FaceIdlGen implements Runnable {
                 IdlParseResult tssResult =
                         new IdlDirectoryParser(tssSearchDirs).parse(tssOutDir.resolve("idl/data-model"));
                 List<LanguageMapper> tssMappers =
-                        FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp);
+                        FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp, genRust);
                 new LanguageBindingPipeline(tssMappers).generateIntoSubdir(tssResult, tssOutDir, "face-model");
                 LOG.info("TSS Step 2 (data-model binding) complete.");
 
@@ -441,7 +447,7 @@ public class FaceIdlGen implements Runnable {
                 description = "Additional IDL include search directory (repeatable).")
         private List<Path> includePaths = new ArrayList<>();
 
-        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#.")
+        @Option(names = {"--all-languages"}, description = "Generate C++, Java, Python, C#, Rust.")
         private boolean allLanguages;
         @Option(names = {"--all-face"},      description = "Generate C++ and Java (default).")
         private boolean allFace;
@@ -451,6 +457,9 @@ public class FaceIdlGen implements Runnable {
         @Option(names = {"--csharp"},
                 description = "Generate C# bindings (non-FACE; excluded from --all-face).")
         private boolean genCsharp;
+        @Option(names = {"--rust"},
+                description = "Generate Rust bindings (non-FACE; excluded from --all-face).")
+        private boolean genRust;
 
         @Override
         public Integer call() throws Exception {
@@ -462,7 +471,7 @@ public class FaceIdlGen implements Runnable {
 
             Files.createDirectories(outputDir);
             List<LanguageMapper> mappers =
-                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp);
+                    FaceToolUtils.buildMappers(allLanguages, allFace, genCpp, genJava, genPython, genCsharp, genRust);
             LOG.info("Active mappers: " + mappers.stream().map(LanguageMapper::languageName).toList());
             new LanguageBindingPipeline(mappers).generate(result, outputDir);
             LOG.info("parse-tss-idl binding complete.");

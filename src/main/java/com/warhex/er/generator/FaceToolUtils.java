@@ -171,7 +171,7 @@ final class FaceToolUtils {
      * <p>Selection rules:
      * <ul>
      *   <li>No flag → all FACE-standard languages (C++, Java).</li>
-     *   <li>{@code --all-languages} → C++, Java, Python, C#.</li>
+     *   <li>{@code --all-languages} → C++, Java, Python, C#, Rust.</li>
      *   <li>{@code --all-face} → C++ + Java (same as default, but explicit).</li>
      *   <li>Individual flags ({@code --cpp}, {@code --java}, …) → only those languages.</li>
      *   <li>Flags are additive: {@code --all-face --python} → C++ + Java + Python.</li>
@@ -182,20 +182,23 @@ final class FaceToolUtils {
                                              boolean genCpp,
                                              boolean genJava,
                                              boolean genPython,
-                                             boolean genCsharp) {
+                                             boolean genCsharp,
+                                             boolean genRust) {
         boolean useDefault = !allLanguages && !allFace && !genCpp
-                             && !genJava && !genPython && !genCsharp;
+                             && !genJava && !genPython && !genCsharp && !genRust;
 
         boolean wantCpp    = allLanguages || allFace || genCpp    || useDefault;
         boolean wantJava   = allLanguages || allFace || genJava   || useDefault;
         boolean wantPython = allLanguages || genPython;
         boolean wantCsharp = allLanguages || genCsharp;
+        boolean wantRust   = allLanguages || genRust;
 
         Set<String> wanted = new HashSet<>();
         if (wantCpp)    wanted.add("C++");
         if (wantJava)   wanted.add("Java");
         if (wantPython) wanted.add("Python");
         if (wantCsharp) wanted.add("C#");
+        if (wantRust)   wanted.add("Rust");
 
         Path langTmplRoot = resolveTemplateRoot(null, "languages");
         return new LanguageDescriptorLoader().load(langTmplRoot).stream()
