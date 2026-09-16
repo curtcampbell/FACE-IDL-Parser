@@ -62,6 +62,20 @@ public class GenericLanguageMapper implements LanguageMapper {
     private final VelocityEngine     velocity;
 
     /**
+     * Alias names of every {@link TemplateInstNode} rendered in the current
+     * {@link #internalMap} call, recomputed at the start of each call (see
+     * {@link #collectTemplateInstAliases}). Exposed to every construct
+     * template as {@code $templateInstAliases}; consumed today only by
+     * Rust's {@code macros.vm} ({@code rustScopedType}) to recognize a
+     * scoped reference into *another* template instantiation's own file
+     * (module = that alias, item = the referenced name declared inside its
+     * substituted body) as distinct from an ordinary same-named
+     * module+type construct — see the comment on {@code rustScopedType}.
+     * Harmless, unused key for every other language.
+     */
+    private Set<String> currentTemplateInstAliases = Set.of();
+
+    /**
      * Lazily-instantiated legacy type helper (e.g. {@code JavaTypeHelper}).
      * Non-null only when {@link LanguageDescriptor#legacy_helper_class} is set.
      * Placed in the Velocity context as {@code $<legacy_helper_key>} so that
@@ -201,6 +215,19 @@ public class GenericLanguageMapper implements LanguageMapper {
             collectEnumNames(spec.definitions(), enumNames);
         }
 
+        // Same rendered-vs-merged-spec distinction as enumNames above, for the
+        // same reason: only aliases that are actually (going to be) rendered
+        // in this pass are relevant to $templateInstAliases.
+        Set<String> templateInstAliases = new HashSet<>();
+        if (!units.isEmpty()) {
+            for (IdlFileUnit unit : units) {
+                collectTemplateInstAliases(unit.definitions(), templateInstAliases);
+            }
+        } else {
+            collectTemplateInstAliases(spec.definitions(), templateInstAliases);
+        }
+        this.currentTemplateInstAliases = templateInstAliases;
+
         TemplateInstantiator instantiator = new TemplateInstantiator(spec);
         TypeResolver types = new TypeResolver(descriptor, instantiator.typedefMap(), enumNames);
 
@@ -336,6 +363,7 @@ public class GenericLanguageMapper implements LanguageMapper {
             ctx.put("reservedWords", reservedWords);
             ctx.put("langName",      descriptor.name);
             ctx.put("construct",     def);
+            ctx.put("templateInstAliases", currentTemplateInstAliases);
             if (instantiation != null) {
                 ctx.put("instantiation", instantiation);
             }
@@ -539,6 +567,21 @@ public class GenericLanguageMapper implements LanguageMapper {
                 collectEnumNames(m.definitions(), names);
             } else if (def instanceof EnumNode e) {
                 names.add(e.name());
+            }
+        }
+    }
+
+    /**
+     * Recursively collects the alias of every top-level or module-nested
+     * {@link TemplateInstNode} in {@code defs} — see {@link #currentTemplateInstAliases}.
+     */
+    private void collectTemplateInstAliases(List<IdlDefinition> defs, Set<String> aliases) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectTemplateInstAliases(m.definitions(), aliases);
+            } else if (def instanceof TemplateInstNode inst
+                    && inst.alias() != null && !inst.alias().isBlank()) {
+                aliases.add(inst.alias());
             }
         }
     }

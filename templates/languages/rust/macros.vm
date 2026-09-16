@@ -49,34 +49,63 @@ $types.type($t)##
 ##   - A bare (unqualified) reference is normally a sibling type declared in
 ##     the same IDL module as the referencing construct — therefore the same
 ##     output directory / same parent Rust module:
-##     "super::GeoPosition::GeoPosition". The one exception is a reference to
-##     another definition substituted from the *same* template instantiation
-##     (e.g. a TypedTS operation parameter of the sibling Read_Callback
-##     interface substituted into the same file) — template_inst.rs.vm sets
-##     $localSiblingNames to that file's own item names before calling into
-##     this macro, and such a name resolves as a bare in-file reference
-##     instead, since it isn't a separate module/file at all.
+##     "super::GeoPosition::GeoPosition".
+##   - A qualified reference can instead name another definition substituted
+##     into a *template instantiation's* own file (e.g. the "Injectable"
+##     interface's parameter typed as the corresponding "TypedTS" interface
+##     of a separately-instantiated Typed<> alias, FACE's dependency-
+##     injection pattern). The IDL writes this as the instantiation's own
+##     alias followed by the member name declared inside its body, e.g.
+##     "...::NewStockAgent_Response::TypedTS" -- which resolveScoped()
+##     returns verbatim, unlike an ordinary type's qualifiedName (which has
+##     no separate "member name" component; see next bullet). Because
+##     template_inst.rs.vm puts every substituted definition directly at
+##     that FILE's own top level (not nested in a further submodule matching
+##     the member's own name), such a reference must be used AS-IS --
+##     "crate::...::NewStockAgent_Response::TypedTS", no doubling -- unlike
+##     the doubling every ordinary construct reference needs (previous
+##     bullet). $templateInstAliases (every TemplateInstNode alias rendered
+##     in this run) is what tells the two cases apart: the doubling branch
+##     below only fires when the second-to-last segment is NOT a known alias.
+##   - Either form (bare OR fully-qualified) can also name a definition
+##     substituted into the *same* file as the reference itself (e.g.
+##     "Injectable" and "TypedTS" both substituted from the very same
+##     instantiation). template_inst.rs.vm sets $localSiblingNames to that
+##     file's own item names before calling into this macro; checked first
+##     (keyed on the trailing segment alone, regardless of qualification),
+##     since it is otherwise indistinguishable from the cross-file case above.
 ##
 ## This requires the generated tree to be mounted as a crate's own module
 ## root so "crate::" absolute paths resolve — see docs/rust-binding-guide.md.
 ## ---------------------------------------------------------------------------
 #macro(rustScopedType $raw)
 #set($__rustPrimitives = ["i8","u8","i16","u16","i32","u32","i64","u64","f32","f64","bool","char","String","()"])
+#set($__lastSeg = $raw)
+#set($__secondLastSeg = "")
+#if($raw.contains("::"))
+#set($__segs = $raw.split("::"))
+#set($__lastSeg = $__segs[$__segs.size() - 1])
+#if($__segs.size() > 1)
+#set($__secondLastSeg = $__segs[$__segs.size() - 2])
+#end
+#end
 #if($__rustPrimitives.contains($raw))
 $raw##
 #elseif($raw.startsWith("Vec<") && $raw.endsWith(">"))
 #set($__inner = $raw.substring(4, $raw.length() - 1))
 Vec<#rustScopedType($__inner)>##
+#elseif($localSiblingNames && $localSiblingNames.contains($__lastSeg))
+$__lastSeg##
 #elseif($raw.contains("::"))
 #set($__stripped = $raw)
 #if($__stripped.startsWith("::"))
 #set($__stripped = $__stripped.substring(2))
 #end
-#set($__segs = $__stripped.split("::"))
-#set($__last = $__segs[$__segs.size() - 1])
-crate::${__stripped}::${__last}##
-#elseif($localSiblingNames && $localSiblingNames.contains($raw))
-$raw##
+#if($templateInstAliases && $templateInstAliases.contains($__secondLastSeg))
+crate::${__stripped}##
+#else
+crate::${__stripped}::${__lastSeg}##
+#end
 #else
 super::${raw}::${raw}##
 #end
