@@ -108,7 +108,7 @@ public final class TemplateInstantiator {
         this.templateRegistry = new LinkedHashMap<>();
         this.typedefMap       = new LinkedHashMap<>();
         walkForTemplates(spec.definitions(), List.of(), templateRegistry);
-        walkForTypedefs(spec.definitions(), typedefMap);
+        walkForTypedefs(spec.definitions(), List.of(), typedefMap);
         LOG.fine("Template registry: " + templateRegistry.keySet());
         LOG.fine("Typedef map size: " + typedefMap.size());
     }
@@ -208,14 +208,28 @@ public final class TemplateInstantiator {
     }
 
     private void walkForTypedefs(List<IdlDefinition> defs,
+                                 List<String> ns,
                                  Map<String, IdlType> map) {
         for (IdlDefinition def : defs) {
             if (def instanceof ModuleNode m) {
-                walkForTypedefs(m.definitions(), map);
+                List<String> newNs = new ArrayList<>(ns);
+                newNs.add(m.name());
+                walkForTypedefs(m.definitions(), newNs, map);
             } else if (def instanceof TypedefNode t) {
-                // Store under bare name and fully-qualified variants
+                // Store under bare name (matches a reference written in the
+                // same scope as the typedef) and under its fully-qualified
+                // name (matches a reference into this typedef from another
+                // #include'd file, which is written/emitted qualified by its
+                // enclosing module path -- see resolveScoped()'s Step 2 in
+                // TypeResolver, which previously always missed this case
+                // because this map held only bare keys).
                 map.put(t.name(), t.underlyingType());
                 map.put("::" + t.name(), t.underlyingType());
+                if (!ns.isEmpty()) {
+                    String qualified = String.join("::", ns) + "::" + t.name();
+                    map.put(qualified, t.underlyingType());
+                    map.put("::" + qualified, t.underlyingType());
+                }
             }
         }
     }
