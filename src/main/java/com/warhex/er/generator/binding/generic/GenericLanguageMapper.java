@@ -76,6 +76,29 @@ public class GenericLanguageMapper implements LanguageMapper {
     private Set<String> currentTemplateInstAliases = Set.of();
 
     /**
+     * Bare declarator names of every multi-operation {@code interface}
+     * (rendered as {@code pub trait}, not a boxed-closure type alias)
+     * reachable in the current {@link #internalMap} call, recomputed at the
+     * start of each call (see {@link #collectMultiOpInterfaceNames}).
+     * Exposed to every construct template as {@code $multiOpInterfaceNames};
+     * consumed today only by Rust's {@code macros.vm} ({@code rustType}) to
+     * wrap a scoped reference to such an interface as {@code Box<dyn Trait +
+     * Send>} instead of emitting the bare trait name as if it were a Sized
+     * value type (e.g. a FACE dependency-injection port's {@code inout T
+     * interface_reference} parameter, where {@code T} is bound to a
+     * multi-operation interface) -- a bare {@code dyn Trait} is unsized and
+     * cannot be used as a parameter/field/return type without some form of
+     * indirection, and this codebase's existing convention for an owned
+     * trait object is exactly the {@code Box<dyn ... + Send>} already used
+     * for every single-operation interface's own type alias. Recurses into
+     * {@link TemplateModuleNode} bodies (unlike {@link #collectEnumNames}):
+     * every interface hitting this bug so far is declared inside a template
+     * body and only ever instantiated, never top-level. Harmless, unused
+     * key for every other language.
+     */
+    private Set<String> currentMultiOpInterfaceNames = Set.of();
+
+    /**
      * Lazily-instantiated legacy type helper (e.g. {@code JavaTypeHelper}).
      * Non-null only when {@link LanguageDescriptor#legacy_helper_class} is set.
      * Placed in the Velocity context as {@code $<legacy_helper_key>} so that
@@ -228,6 +251,21 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
         this.currentTemplateInstAliases = templateInstAliases;
 
+        // Unlike enumNames/templateInstAliases above, always collected from
+        // the full merged spec, never units-restricted: the interface this
+        // exists for (e.g. FACE::TSS::TypedTS) is declared exactly once in
+        // static framework IDL (face-idl/FACE/TSS/TypedTS.idl) -- parsed for
+        // symbol resolution like the framework enums enumNames excludes,
+        // but (unlike those enums) genuinely rendered here, just always via
+        // instantiation rather than as a standalone construct of its own.
+        // Restricting to units would make this collection permanently miss
+        // exactly the interfaces it exists to catch. typedefMap has the same
+        // full-spec scope for the same reason (TemplateInstantiator is
+        // always built from spec, never units, below).
+        Set<String> multiOpInterfaceNames = new HashSet<>();
+        collectMultiOpInterfaceNames(spec.definitions(), multiOpInterfaceNames);
+        this.currentMultiOpInterfaceNames = multiOpInterfaceNames;
+
         TemplateInstantiator instantiator = new TemplateInstantiator(spec);
         TypeResolver types = new TypeResolver(descriptor, instantiator.typedefMap(), enumNames);
 
@@ -364,6 +402,7 @@ public class GenericLanguageMapper implements LanguageMapper {
             ctx.put("langName",      descriptor.name);
             ctx.put("construct",     def);
             ctx.put("templateInstAliases", currentTemplateInstAliases);
+            ctx.put("multiOpInterfaceNames", currentMultiOpInterfaceNames);
             if (instantiation != null) {
                 ctx.put("instantiation", instantiation);
             }
@@ -567,6 +606,27 @@ public class GenericLanguageMapper implements LanguageMapper {
                 collectEnumNames(m.definitions(), names);
             } else if (def instanceof EnumNode e) {
                 names.add(e.name());
+            }
+        }
+    }
+
+    /**
+     * Recursively collects the bare declarator name of every multi-operation
+     * {@link InterfaceNode} in {@code defs} — see
+     * {@link #currentMultiOpInterfaceNames}. Unlike {@link #collectEnumNames},
+     * also recurses into a {@link TemplateModuleNode}'s own body: every
+     * interface that has hit this bug is declared inside a template and
+     * never appears top-level, so skipping templates (as collectEnumNames
+     * does) would make this collection permanently empty.
+     */
+    private void collectMultiOpInterfaceNames(List<IdlDefinition> defs, Set<String> names) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectMultiOpInterfaceNames(m.definitions(), names);
+            } else if (def instanceof TemplateModuleNode t) {
+                collectMultiOpInterfaceNames(t.definitions(), names);
+            } else if (def instanceof InterfaceNode i && i.operations().size() > 1) {
+                names.add(i.name());
             }
         }
     }
