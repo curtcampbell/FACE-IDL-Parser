@@ -216,6 +216,27 @@ public final class TemplateInstantiator {
                 newNs.add(m.name());
                 walkForTypedefs(m.definitions(), newNs, map);
             } else if (def instanceof TypedefNode t) {
+                // A Scoped underlying type is written (and parsed) relative
+                // to the scope the typedef itself is declared in -- e.g.
+                // "typedef T_Money::Money Money;" inside "module CORE_Templates"
+                // stores the underlying reference as just "T_Money::Money".
+                // Absolutize it against this typedef's own enclosing module
+                // path *once*, here, so every later chain-walk consumer
+                // (TypeResolver.resolveScoped/resolvesToScalar, and this
+                // class's own resolveTypedef) gets a fully-qualified name for
+                // free instead of the bare-relative one -- mirroring the
+                // same enclosing-prefix logic TypeResolver#resolveTypedefTarget
+                // already applies, but at map-build time so every chain-walk
+                // site benefits, not just the #include-path computation.
+                // Already-absolute references (leading "::") are left as-is.
+                IdlType underlying = t.underlyingType();
+                if (underlying instanceof IdlType.Scoped s
+                        && !s.qualifiedName().startsWith("::")
+                        && !ns.isEmpty()) {
+                    underlying = new IdlType.Scoped(
+                            "::" + String.join("::", ns) + "::" + s.qualifiedName());
+                }
+
                 // Store under bare name (matches a reference written in the
                 // same scope as the typedef) and under its fully-qualified
                 // name (matches a reference into this typedef from another
@@ -223,12 +244,12 @@ public final class TemplateInstantiator {
                 // enclosing module path -- see resolveScoped()'s Step 2 in
                 // TypeResolver, which previously always missed this case
                 // because this map held only bare keys).
-                map.put(t.name(), t.underlyingType());
-                map.put("::" + t.name(), t.underlyingType());
+                map.put(t.name(), underlying);
+                map.put("::" + t.name(), underlying);
                 if (!ns.isEmpty()) {
                     String qualified = String.join("::", ns) + "::" + t.name();
-                    map.put(qualified, t.underlyingType());
-                    map.put("::" + qualified, t.underlyingType());
+                    map.put(qualified, underlying);
+                    map.put("::" + qualified, underlying);
                 }
             }
         }
