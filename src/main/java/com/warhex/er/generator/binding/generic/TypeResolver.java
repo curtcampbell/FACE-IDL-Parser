@@ -158,10 +158,29 @@ public class TypeResolver {
             if (underlying == null) break;
 
             if (underlying instanceof IdlType.Scoped s) {
-                // Check scoped_overrides on the resolved scoped name
+                // Check scoped_overrides on the resolved scoped name -- an
+                // explicit override always wins, even for a language that
+                // otherwise preserves typedef names (preserve_typedef_names
+                // doesn't apply to a name the descriptor explicitly maps to
+                // something else).
                 if (descriptor.scoped_overrides != null) {
                     String mapped = descriptor.scoped_overrides.get(s.qualifiedName());
                     if (mapped != null) return mapped;
+                }
+                if (descriptor.preserve_typedef_names) {
+                    // Preserve the typedef's own name (Step 3, below)
+                    // instead of expanding into its underlying scoped type
+                    // -- same rule the non-Scoped branch below already
+                    // applies, previously not applied here. A Scoped
+                    // underlying type is exactly the "Template outer
+                    // convenience alias -> T_<Name>::<Name>" pattern (e.g.
+                    // "typedef T_Money::Money Money;"); C++ renders a real
+                    // typedef declaration for the alias itself
+                    // (file.hpp.vm's TypedefItem branch), so referencing
+                    // "Money" compiles as-is -- expanding into
+                    // "T_Money::Money" only discards the resolvable name
+                    // the alias exists to provide.
+                    break;
                 }
                 current = s.qualifiedName();
             } else if (!descriptor.preserve_typedef_names) {
