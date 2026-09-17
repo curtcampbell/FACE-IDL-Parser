@@ -13,14 +13,28 @@
 ##     scoped element type is also rewritten. The sequence bound and the
 ##     array's fixed dimensions are not preserved (same limitation as the
 ##     Python List[T] / C# T[] mappings).
-##   - Scoped -> #rustScopedType($types.type($t)) (see below).
+##   - Scoped -> #rustScopedType($types.type($t)) (see below), unless it
+##     resolves to a multi-operation interface ($multiOpInterfaceNames,
+##     rendered as "pub trait", not a boxed-closure type alias) -- a bare
+##     "dyn Trait" is unsized and can't be used as a parameter/field/return
+##     type on its own, so that case is wrapped as Box<dyn Trait + Send>
+##     instead, matching the Box<dyn FnMut(...) + Send> already used for
+##     every single-operation interface's own type alias (see interface.rs.vm
+##     and template_inst.rs.vm). A single-operation interface needs no such
+##     wrapping here: its "type" IS that Box<...> alias already, a plain
+##     Sized name like any struct/enum.
 ## ---------------------------------------------------------------------------
 #macro(rustType $t)
 #set($__tn = $t.class.simpleName)
 #if($__tn == "Sequence" || $__tn == "Array")
 Vec<#rustType($t.elementType)>##
 #elseif($__tn == "Scoped")
-#rustScopedType($types.type($t))##
+#set($__resolved = $types.type($t))
+#if($multiOpInterfaceNames && $multiOpInterfaceNames.contains($types.lastSegment($__resolved)))
+Box<dyn #rustScopedType($__resolved) + Send>##
+#else
+#rustScopedType($__resolved)##
+#end
 #else
 $types.type($t)##
 #end
