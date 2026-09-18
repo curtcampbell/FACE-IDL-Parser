@@ -48,6 +48,13 @@ $types.type($t)##
 ##   - A scoped_overrides / typedef-expanded primitive (e.g. "i32", "String")
 ##     is a FACE namespace alias, not a locally-generated type — returned
 ##     unchanged.
+##   - A scoped_overrides value that is *already* an absolute "crate::..."
+##     path (e.g. FACE::RETURN_CODE_TYPE / FACE::TSS::{HEADER_TYPE,QoS_Element}
+##     in language.yaml, pointing at a consumer-supplied face-core-equivalent
+##     stub) is also returned unchanged, for the same reason as the primitive
+##     case above: it's already fully resolved, and re-running it through the
+##     "contains ::" branch below would re-prefix it with a second "crate::"
+##     and re-double its final segment.
 ##   - A typedef-expanded sequence/array (e.g. "Vec<ChangedField>" — $raw is a
 ##     Scoped reference to a typedef whose underlying type is itself a
 ##     sequence/array; TypeResolver flattens that whole chain into one string
@@ -104,6 +111,8 @@ $types.type($t)##
 #end
 #end
 #if($__rustPrimitives.contains($raw))
+$raw##
+#elseif($raw.startsWith("crate::"))
 $raw##
 #elseif($raw.startsWith("Vec<") && $raw.endsWith(">"))
 #set($__inner = $raw.substring(4, $raw.length() - 1))

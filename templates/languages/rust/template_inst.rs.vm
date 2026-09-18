@@ -7,7 +7,13 @@
 ## wrapper to open here.
 ##
 ## Mapping for each definition inside the instantiation:
-##   InterfaceNode (single op) -> boxed FnMut type alias
+##   InterfaceNode (single op, named "Set_Reference") -> pub trait Injectable:
+##     Send { fn set_reference(...) -> (...); } -- the FACE dependency-
+##     injection port pattern; see interface.rs.vm's module doc for the full
+##     rationale (this mirrors it exactly, since a TypedTS_Injectable's
+##     "Injectable" interface reaches this branch, not interface.rs.vm's,
+##     when it's substituted from a template instantiation).
+##   InterfaceNode (single op, otherwise) -> boxed FnMut type alias
 ##   InterfaceNode (multi op)  -> pub trait
 ##   StructNode                -> pub struct (Debug/Clone/PartialEq — see
 ##                                struct.rs.vm for why Default is not derived)
@@ -33,14 +39,26 @@
 #set($defType = $def.class.simpleName)
 #if($defType == "InterfaceNode")
 #if($def.operations.size() == 1)
-## ── boxed closure type alias ────────────────────────────────────────────────
 #set($op = $def.operations.get(0))
+#if($op.name == "Set_Reference")
+## ── FACE dependency-injection port -> trait, not boxed closure ─────────────
+/// Injectable port for substituted IDL interface `${def.name}`
+/// (template instantiation `${alias}`).
+///
+/// IDL: `${def.name}::${op.name}(#idlParamSummary($op))`
+pub trait $types.safeName($def.name): Send {
+    fn set_reference(#selfAndParams($op)) -> #rustLogicalReturn($op);
+}
+
+#else
+## ── Ordinary single-operation interface -> boxed closure type alias ────────
 /// Boxed callback for substituted IDL interface `${def.name}`
 /// (template instantiation `${alias}`).
 ///
 /// IDL: `${def.name}::${op.name}(#idlParamSummary($op))`
 pub type $types.safeName($def.name) = Box<dyn FnMut(#paramTypesOnly($op)) -> #rustReturnType($op) + Send>;
 
+#end
 #else
 ## ── trait ────────────────────────────────────────────────────────────────────
 /// Rust trait for substituted IDL interface `${def.name}`

@@ -116,6 +116,55 @@ scoped_overrides:
   "::FACE::UNBOUNDED_STRING_TYPE": String
   "FACE::UNBOUNDED_STRING_TYPE": String
 
+  # FACE::RETURN_CODE_TYPE / FACE::TSS::{HEADER_TYPE,QoS_Element} are structs/
+  # an enum, not primitives -- unlike every override above, these map to a
+  # real generated type a consumer must supply (mirroring BLUSH's face-core
+  # for C++: FACE-IDL-Parser doesn't (re)generate FACE-standard framework
+  # types itself, see RUST_BINDING_SUMMARY.md's "Known limitation").
+  #
+  # A struct/enum reference to one of these arrives here *bare* (no "::" at
+  # all) because the .idl source writes it unqualified, relying on ordinary
+  # IDL nested-scope lookup from deep inside a template body -- the same way
+  # C++ compiles it via real namespace lookup with no path baked into the
+  # generated text at all. Rust has no such scope-searching lookup: every
+  # module path is resolved textually, so the generated reference itself
+  # must already be the final, absolute path. Mapping the bare name directly
+  # to an absolute crate::-path here is that Rust-specific equivalent --
+  # correct from any nesting depth, unlike a relative "super::" guess (see
+  # rustScopedType in macros.vm, which previously had no override for these
+  # three names at all and fell through to that guess).
+  #
+  # Qualified variants are included too, matching each type's true
+  # FACE-standard declaration scope (RETURN_CODE_TYPE: FACE/Common.idl,
+  # directly in module FACE; HEADER_TYPE/QoS_Element: FACE/TSS/Common.idl,
+  # in module FACE::TSS) -- in case some other reference site ever spells
+  # these out qualified instead of bare.
+  #
+  # Deliberately NOT doubled ("crate::FACE::TSS::HEADER_TYPE", not
+  # "...::HEADER_TYPE::HEADER_TYPE") unlike an ordinary generated-construct
+  # reference: the doubling exists only because the Rust binding's own
+  # per-construct iteration strategy makes the module BE the file, with the
+  # type declared one level inside it -- a structural fact about *generated*
+  # code, not a general path convention. These three are a plain value
+  # substitution, exactly like every primitive override above (also
+  # undoubled, e.g. "GUID_TYPE" -> "u64", never "u64::u64") -- consumer-
+  # supplied types just happen to need an absolute path instead of a literal
+  # value. The consuming project (e.g. blush-rs's face-core) is expected to
+  # expose each name as a plain flat item at this exact path, not wrapped in
+  # a same-named module. The target path's own final segment ("RETURN_CODE",
+  # not "RETURN_CODE_TYPE") is the consuming crate's own naming choice, not
+  # the IDL name -- the key here (what the .idl source actually spells) is
+  # unaffected either way.
+  "RETURN_CODE_TYPE": "crate::FACE::RETURN_CODE"
+  "FACE::RETURN_CODE_TYPE": "crate::FACE::RETURN_CODE"
+  "::FACE::RETURN_CODE_TYPE": "crate::FACE::RETURN_CODE"
+  "HEADER_TYPE": "crate::FACE::TSS::HEADER_TYPE"
+  "FACE::TSS::HEADER_TYPE": "crate::FACE::TSS::HEADER_TYPE"
+  "::FACE::TSS::HEADER_TYPE": "crate::FACE::TSS::HEADER_TYPE"
+  "QoS_Element": "crate::FACE::TSS::QoS_Element"
+  "FACE::TSS::QoS_Element": "crate::FACE::TSS::QoS_Element"
+  "::FACE::TSS::QoS_Element": "crate::FACE::TSS::QoS_Element"
+
 # Rust types that already implement Copy/Default without our help — used by
 # $types.isImmutable() (harmless to Rust templates that don't call it; kept
 # for consistency with the other descriptors).
