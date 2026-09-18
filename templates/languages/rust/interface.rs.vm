@@ -2,12 +2,31 @@
 ## Generates a boxed-closure type alias or a trait for an IDL interface.
 ##
 ## Mapping rules:
-##   Single-operation IDL interface -> boxed FnMut type alias (callback).
-##     A FACE dependency-injection port hands you exactly one instance of a
-##     FACE-defined callback interface with one operation — there is no
-##     benefit to a full trait for that single method, so this maps directly
-##     onto Rust's own callback idiom (a boxed closure) instead of a
-##     single-method trait (contrast with the C# mapping's `delegate`).
+##   Single-operation IDL interface named "Set_Reference" (the FACE
+##   dependency-injection port pattern, e.g. "Injectable::Set_Reference")
+##   -> pub trait Injectable: Send { fn set_reference(...) -> (...); }
+##     Not a boxed closure: an executive holding a live reference needs real
+##     state (struct fields, not a closure's capture list), room to grow a
+##     second method if FACE ever needs one, a named operation
+##     (`.set_reference(...)`) rather than an anonymous call, and the normal
+##     way to mock a trait (a struct implementing it) instead of
+##     Arc<Mutex<_>>/channel tricks to inspect captured state in tests.
+##     Method name is snake_case ("set_reference"), not the IDL's PascalCase
+##     ("Set_Reference") like every other generated method -- a deliberate,
+##     scoped exception matching face-core's own hand-written Injectable
+##     traits (e.g. FACE::Configuration_Injectable::Injectable), which this
+##     mirrors exactly so consuming code sees one consistent shape whether
+##     the Injectable came from face-core or from generated code.
+##     Return type is a plain tuple, not Result<_, FaceError>: the returned
+##     reference comes back "possibly unchanged" regardless of the return
+##     code, so a Result has nowhere to put it on an error path.
+##
+##   Any other single-operation IDL interface -> boxed FnMut type alias
+##   (callback), e.g. a Read_Callback delivering a pub/sub message. There is
+##   no benefit to a full trait for a genuinely ephemeral, stateless
+##   single-shot callback like this, so it maps directly onto Rust's own
+##   callback idiom (a boxed closure) instead (contrast with the C#
+##   mapping's `delegate`).
 ##
 ##   Multi-operation IDL interface -> pub trait, one fn per operation.
 ##     Every operation returns Result<T, FaceError> — FACE TS operations may
@@ -28,12 +47,22 @@
 #![allow(non_snake_case, non_camel_case_types)]
 ##
 #if($iface.operations.size() == 1)
-## ── Single-operation interface -> boxed closure type alias ─────────────────
 #set($op = $iface.operations.get(0))
+#if($op.name == "Set_Reference")
+## ── FACE dependency-injection port -> trait, not boxed closure ─────────────
+/// Injectable port for IDL interface `${iface.name}`.
+///
+/// IDL: `${iface.name}::${op.name}(#idlParamSummary($op))`
+pub trait $types.safeName($iface.name): Send {
+    fn set_reference(#selfAndParams($op)) -> #rustLogicalReturn($op);
+}
+#else
+## ── Ordinary single-operation interface -> boxed closure type alias ────────
 /// Boxed callback for IDL interface `${iface.name}`.
 ///
 /// IDL: `${iface.name}::${op.name}(#idlParamSummary($op))`
 pub type $types.safeName($iface.name) = Box<dyn FnMut(#paramTypesOnly($op)) -> #rustReturnType($op) + Send>;
+#end
 #else
 ## ── Multi-operation interface -> trait ──────────────────────────────────────
 /// Rust trait for IDL interface `${iface.name}`.
