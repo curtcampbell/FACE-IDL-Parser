@@ -99,6 +99,31 @@ public class TypeResolver {
         return "/* unknown */";
     }
 
+    /**
+     * Resolves a raw, fully-qualified IDL type name exactly as
+     * {@link #type(IdlType)} would for an {@link IdlType.Scoped} reference
+     * with the same name — through the typedef chain, {@code scoped_overrides},
+     * and this descriptor's doubling/path conventions (e.g. a
+     * {@code uop:Template} alias like {@code CORE_Templates::Money} still
+     * expands to its real generated name, {@code T_Money::Money}, for a
+     * language that doesn't preserve typedef names).
+     *
+     * <p>For callers with a name string but no {@link IdlType} object to
+     * wrap it in — e.g. a {@code face-codegen} template built from
+     * {@link com.warhex.er.generator.reader.dto.TssTypeData}'s
+     * {@code modelNamespaceQualified + "::" + name} rather than from the
+     * IDL AST. Naively concatenating that string in a template would
+     * silently skip typedef resolution and reintroduce exactly the
+     * cross-{@code #include} typedef bugs {@link #resolveScoped} exists to
+     * fix.
+     *
+     * @param qualifiedName fully-qualified IDL name (with or without leading {@code ::})
+     * @return language type string (never {@code null})
+     */
+    public String type(String qualifiedName) {
+        return resolveScoped(qualifiedName);
+    }
+
     // =========================================================================
     // Tier 1 — primitives
     // =========================================================================
