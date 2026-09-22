@@ -20,6 +20,7 @@ understand why the pipeline does what it does.
 10. [How to Write a New Template](#10-how-to-write-a-new-template)
 11. [Template Sets — Type Distinctions](#11-template-sets----type-distinctions)
 12. [EntityReactor C++ Design](#12-entityreactor-c-design)
+13. [The Generic Language-Binding Engine — Extension Points](#13-the-generic-language-binding-engine----extension-points)
 
 ---
 
@@ -206,6 +207,27 @@ IdlType
 All nodes expose both Java record-style accessors (e.g. `name()`) **and**
 JavaBean getters (e.g. `getName()`). Always use the JavaBean getters in
 Velocity templates (see `docs/velocity-template-gotchas.md` rule 3).
+
+> **This rule applies to `IdlType`'s variants too, and for a long time it
+> silently didn't hold there.** `Sequence`, `Array`, `Scoped`, `Str`, and
+> `WideStr` had only the record-style accessors (`elementType()`,
+> `qualifiedName()`, `bound()`) — no `getElementType()` / `getQualifiedName()`
+> / `getBound()`. A macro written the obvious way, `$t.elementType`, doesn't
+> error when the getter is missing: Velocity's property syntax only tries
+> `getXxx()`/`isXxx()`, so an unresolved reference silently evaluates to
+> `null`, and `TypeResolver.type(null)` falls through every `instanceof`
+> check to its `"/* unknown */"` catch-all. No exception, no log line — the
+> template renders, and the output just has `/* unknown */` sitting in it.
+> This was live in production for a while: C#'s `copyExpr` macro
+> (`templates/languages/csharp/macros.vm`) calls `$type.elementType` and had
+> been silently emitting `new /* unknown */(x)` for any sequence-of-struct
+> field, caught only when the Rust binding's own macros hit the identical
+> pattern and a `cargo build` on real output made the failure loud instead of
+> silent. Fixed once, for every language, by adding the missing getters
+> (§13.2 has the exact list). **The lesson for any future `IdlType` variant
+> or field**: add the JavaBean getter in the same commit as the record-style
+> one — don't wait for a macro to need it, because when a macro needs it and
+> doesn't have it, nothing tells you.
 
 ---
 
@@ -696,7 +718,10 @@ Templates in `templates/languages/{cpp,csharp,java,python,rust}/` are driven by
 | `primitive_types` | IDL primitive → target language type map |
 | `parameterized_types` | Sequence/array/string → target language type map |
 
-Language templates do **not** use `##!` directives.
+Language templates do **not** use `##!` directives. For the engine mechanics
+behind this table — how a language's macros get access to spec-wide
+structural knowledge, and the post-file triggers available for wiring up a
+generated module tree — see §13.
 
 ### `.vtl` IDL generation templates (`face-idl-gen`)
 
@@ -852,3 +877,101 @@ Pure-virtual connection-facing interface. Derives from
 The generated registrar headers (`{Entity}Registrar.hpp`) are ready to be used
 once `ReactorImpl` provides a concrete `Registry&` to call
 `Register_Entity_Type` on.
+
+---
+
+## 13. The Generic Language-Binding Engine — Extension Points
+
+`GenericLanguageMapper` (§11's "language.yaml-driven templates") is meant to
+carry **zero** language-specific logic in Java — everything language-specific
+lives in a `language.yaml` descriptor and that language's own `macros.vm` /
+`.vm` templates. Adding the Rust binding needed a few small additions to that
+shared engine to hold up under real-world IDL (FACE's own template-heavy
+transport-service patterns), and every one of them is a generic capability,
+not Rust-specific code — Rust is just the first, and so far only, consumer of
+each. This section documents them as extension points for the next language
+(or the next Rust feature) to reuse, plus the one Java-level bug they
+surfaced along the way.
+
+### 13.1 `IdlType` getter completeness
+
+Covered in §2's callout above — repeated here because it's the kind of thing
+that's easy to reintroduce. If you add a field to any `IdlType` variant (or a
+new variant), give it a JavaBean getter in the same change, even if no
+template calls it yet. There is no test, lint, or runtime error that catches
+the omission; a macro that needs it later just silently gets `"/* unknown
+*/"` instead of a stack trace.
+
+### 13.2 Post-file triggers: `per_output_directory` vs. `per_directory_tree`
+
+`LanguageDescriptor.PostFileEntry.trigger` supports two values, both handled
+in `GenericLanguageMapper.emitPostFiles()`:
+
+| Trigger | Fires for | Used by | Fits when |
+|---|---|---|---|
+| `per_output_directory` | Every *leaf* directory that directly received ≥1 rendered construct | Python's `__init__.py` | The language either has no concept of an intermediate "index" file (implicit namespace packages, PEP 420) or doesn't need one because each file declares its own fully-qualified namespace regardless of directory (C#'s `namespace X.Y.Z { }`) |
+| `per_directory_tree` | *Every* directory under the language's output root that contains at least one generated file or subdirectory — including directories with no construct of their own, just child directories | Rust's `mod.rs` / `lib.rs` | The language's module system requires an explicit declaration at *every* level of nesting, not just leaves — Rust's `mod`/`pub mod` has no directory-scan equivalent |
+
+`per_directory_tree` recurses the whole tree after the AST walk finishes and,
+for each non-empty directory, renders the template into `path` (or, at the
+language's output root only, into `root_path` if set — this is how Rust gets
+`lib.rs` at the crate root and `mod.rs` everywhere else from a single
+descriptor entry). The template receives the directory's immediate children
+— subdirectory names, and file stems with the configured extension stripped
+— under `context_key`, exactly like `per_output_directory`'s accumulated
+construct names.
+
+```yaml
+# templates/languages/rust/language.yaml
+post_files:
+  - trigger: per_directory_tree
+    template: mod.rs.vm
+    path: mod.rs
+    root_path: lib.rs
+    context_key: childModules
+```
+
+Adding this trigger required no Rust-specific code in
+`GenericLanguageMapper` — it's a plain recursive directory walk keyed on the
+descriptor's own `path`/`root_path`/`context_key` fields.
+
+### 13.3 Context registries: giving a language's macros spec-wide knowledge
+
+A `.vm` template only sees the one construct it's rendering (`$construct`)
+plus whatever the engine already puts in context (`$types`, `$spec`,
+`$moduleStack`, …). Sometimes a language's *type resolution* needs to know
+something about the **rest of the spec** — not just the one field/parameter
+being resolved — and that's what these two registries are for. Both follow
+the same shape:
+
+1. A private `Set<String>` field on `GenericLanguageMapper`, recomputed at
+   the top of each `internalMap()` call.
+2. A `collectXxx(List<IdlDefinition> defs, Set<String> out)` recursive
+   collector, following the same walk-the-AST pattern as the pre-existing
+   `collectEnumNames` (used for the `enum_value_suffix` feature).
+3. One line in `renderConstruct()`'s context setup: `ctx.put("xxxNames",
+   currentXxxNames);` — so it's available to *every* construct kind's
+   template, not just one.
+
+| Registry | Context key | Collected from | Consumed by |
+|---|---|---|---|
+| `currentTemplateInstAliases` | `$templateInstAliases` | Every `TemplateInstNode` alias, restricted to what's actually rendered this pass (file units when present, else the merged spec — same restriction `enumNames` uses) | Rust's `rustScopedType` macro, to recognize a scoped reference into *another* template instantiation's own generated file (module = that alias, item = the name declared inside its substituted body) as distinct from an ordinary construct whose file and type share one name |
+| `currentMultiOpInterfaceNames` | `$multiOpInterfaceNames` | Every multi-operation `InterfaceNode`, from the **full merged spec**, unrestricted, recursing into `TemplateModuleNode` bodies | Rust's `rustType` macro, to wrap such a reference as `Box<dyn Trait + Send>` instead of the bare (unsized, unusable-by-value) trait name |
+
+**The one subtlety that matters if you add a third registry**: get the
+collection scope right, and don't assume the two existing ones set the same
+precedent. `templateInstAliases` (like `enumNames`) is restricted to file
+units when present, because static framework IDL (`face-idl/FACE/Common.idl`
+etc.) is parsed for symbol resolution but deliberately never rendered — see
+§11's negative test in `LanguageBindingIntegrationTest`
+(`assertFalse(...QoS_Element.cs...)`). `multiOpInterfaceNames` is
+deliberately **not** restricted that way: the interface it exists to catch
+(`FACE::TSS::TypedTS`) is declared exactly once, in that same static
+framework IDL, and is only ever reached through instantiation, never
+top-level — restricting its collection to file units the way `enumNames`
+does would make the registry permanently empty for the exact case it was
+built for. Ask which case your new registry is before copying either one.
+
+All three registries (plus `per_directory_tree`) are harmless, unused
+context keys for every language other than the one whose macros read them —
+adding one costs nothing for Python/C#/Java/C++.
