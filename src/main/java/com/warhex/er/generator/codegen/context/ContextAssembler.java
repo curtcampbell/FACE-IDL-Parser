@@ -99,20 +99,11 @@ public final class ContextAssembler {
         TypeResolver types = null;
         if (languageDir != null) {
             LanguageDescriptor desc = loadDescriptor(languageDir);
-            // enumNames is collected from the same definitions that actually
-            // get rendered (file units when present, else the full spec),
-            // NOT the full merged spec unconditionally -- see
-            // GenericLanguageMapper#internalMap's identical logic and
-            // session-docs/BUG-struct-field-namespace-qualification.md, Bug #7.
+            // enumNames is collected from the full merged spec, framework
+            // enums (e.g. RETURN_CODE_TYPE) included -- see
+            // GenericLanguageMapper#internalMap's identical logic.
             Set<String> enumNames = new HashSet<>();
-            List<IdlFileUnit> units = parseResult.fileUnits();
-            if (!units.isEmpty()) {
-                for (IdlFileUnit unit : units) {
-                    collectEnumNames(unit.definitions(), enumNames);
-                }
-            } else {
-                collectEnumNames(spec.definitions(), enumNames);
-            }
+            collectEnumNames(spec.definitions(), enumNames);
             types = new TypeResolver(desc, instantiator.typedefMap(), enumNames);
             LOG.info("Language descriptor loaded from: " + languageDir);
         }

@@ -234,27 +234,18 @@ public class GenericLanguageMapper implements LanguageMapper {
         List<IdlFileUnit> units = result.fileUnits();
 
         // Build type resolver with typedef chain support. enumNames is
-        // collected from the same definitions that actually get rendered
-        // (file units when present, else the full spec) -- NOT the full
-        // merged spec unconditionally -- because that also includes static
-        // framework IDL (FACE/Common.idl, FACE/TSS/Common.idl) parsed for
-        // symbol resolution but never rendered as a wrapper struct. Its
-        // enums (e.g. RETURN_CODE_TYPE) are commonly hand-implemented as a
-        // plain C++ enum instead, so TypeResolver must not treat them as
-        // needing the enum_value_suffix (session-docs/BUG-struct-field-namespace-qualification.md,
-        // Bug #7).
+        // collected from the full merged spec, framework IDL included: FACE
+        // TS 3.2 s4.14.8.8.2 maps every IDL enum to a struct wrapping "enum
+        // Value", so a framework enum such as FACE::RETURN_CODE_TYPE (from
+        // face-idl/FACE/Common.idl, never rendered here -- face-core provides
+        // it) still needs the enum_value_suffix wherever it is used
+        // (RETURN_CODE_TYPE::Value&), matching the platform face-core.
         Set<String> enumNames = new HashSet<>();
-        if (!units.isEmpty()) {
-            for (IdlFileUnit unit : units) {
-                collectEnumNames(unit.definitions(), enumNames);
-            }
-        } else {
-            collectEnumNames(spec.definitions(), enumNames);
-        }
+        collectEnumNames(spec.definitions(), enumNames);
 
-        // Same rendered-vs-merged-spec distinction as enumNames above, for the
-        // same reason: only aliases that are actually (going to be) rendered
-        // in this pass are relevant to $templateInstAliases.
+        // Collected from the definitions actually rendered (file units when
+        // present, else the full spec): only aliases that are (going to be)
+        // rendered in this pass are relevant to $templateInstAliases.
         Set<String> templateInstAliases = new HashSet<>();
         if (!units.isEmpty()) {
             for (IdlFileUnit unit : units) {
@@ -275,12 +266,11 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
         this.currentTemplateInstScopes = templateInstScopes;
 
-        // Unlike enumNames/templateInstAliases above, always collected from
-        // the full merged spec, never units-restricted: the interface this
-        // exists for (e.g. FACE::TSS::TypedTS) is declared exactly once in
-        // static framework IDL (face-idl/FACE/TSS/TypedTS.idl) -- parsed for
-        // symbol resolution like the framework enums enumNames excludes,
-        // but (unlike those enums) genuinely rendered here, just always via
+        // Unlike templateInstAliases above, always collected from the full
+        // merged spec, never units-restricted: the interface this exists for
+        // (e.g. FACE::TSS::TypedTS) is declared exactly once in static
+        // framework IDL (face-idl/FACE/TSS/TypedTS.idl) -- parsed for symbol
+        // resolution, and genuinely rendered here, just always via
         // instantiation rather than as a standalone construct of its own.
         // Restricting to units would make this collection permanently miss
         // exactly the interfaces it exists to catch. typedefMap has the same
