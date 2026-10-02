@@ -340,6 +340,52 @@ class LanguageBindingIntegrationTest {
     }
 
     @Test
+    @DisplayName("C++ struct default constructor value-initializes non-primitive members")
+    void testCppDefaultConstructorInitializers(@TempDir Path tempDir) throws Exception {
+        Path faceIdl = Paths.get("face-idl");
+        assumeFileExists(faceIdl);
+
+        // A primitive gets an explicit zero; everything else -- a typedef'd
+        // scalar, an enum's ::Value, a FACE::String (typedef'd or not), a
+        // nested struct -- gets member(), never member({}): ({}) warns on a
+        // non-class type and picks FACE::String(const char*) with nullptr.
+        Path idlRoot = tempDir.resolve("idl");
+        Path idl = idlRoot.resolve("FACE/DM/SampleModel/Outer.idl");
+        Files.createDirectories(idl.getParent());
+        Files.writeString(idl, """
+                module FACE { module DM { module SampleModel {
+                  typedef double Count;
+                  typedef string Name_String;
+                  enum Kind { KIND_A, KIND_B };
+                  struct Inner { long a; };
+                  struct Outer {
+                    long id;
+                    boolean flag;
+                    Count count;
+                    Name_String name;
+                    string raw;
+                    Kind kind;
+                    Inner inner;
+                  };
+                }; }; };
+                """);
+
+        IdlParseResult result = new IdlDirectoryParser(List.of(faceIdl, idlRoot)).parse(idlRoot);
+        List<LanguageMapper> cppOnly = buildMappers().stream()
+                .filter(m -> m.languageName().equals("C++"))
+                .toList();
+        new LanguageBindingPipeline(cppOnly).generate(result, tempDir.resolve("out"));
+
+        String hpp = Files.readString(
+                tempDir.resolve("out/cpp/include/FACE/DM/SampleModel/Outer.hpp"));
+        for (String init : List.of("id(0)", "flag(false)", "count()", "name()",
+                                   "raw()", "kind()", "inner()")) {
+            assertTrue(hpp.contains(init), "expected initializer " + init + " in:\n" + hpp);
+        }
+        assertFalse(hpp.contains("({})"), "no member({}) initializers:\n" + hpp);
+    }
+
+    @Test
     @DisplayName("PythonTypeHelper: IDL primitive type mappings are correct")
     void testPythonTypeMapping() {
         com.warhex.er.generator.binding.python.PythonTypeHelper py =

@@ -459,7 +459,13 @@ public class TypeResolver {
      * {@code bool} → {@code "false"},
      * {@code char/wchar_t} → {@code "'\\0'"},
      * all other primitives → {@code "0"},
-     * structs/sequences/strings/arrays → {@code "{}"}.
+     * everything else → {@code ""}, i.e. {@code member()}: value-initialization,
+     * so a typedef'd scalar or an enum's {@code ::Value} is zeroed and a class
+     * type (struct, sequence, {@code FACE::String}) gets its default
+     * constructor. Not {@code member({})}: on a non-class type g++ warns
+     * ("list-initializer for non-class type must not be parenthesized"), and
+     * on {@code FACE::String} it selects {@code String(const char*)} with a
+     * null pointer, an INVALID string, instead of the valid empty one.
      *
      * @param t IDL type
      * @return default initialiser string
@@ -475,10 +481,7 @@ public class TypeResolver {
                 default          -> "0";
             };
         }
-        if (t instanceof IdlType.Void) {
-            return "";
-        }
-        return "{}";
+        return "";
     }
 
     /**

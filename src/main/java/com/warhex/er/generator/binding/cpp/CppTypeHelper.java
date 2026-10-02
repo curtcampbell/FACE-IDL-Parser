@@ -98,7 +98,11 @@ public class CppTypeHelper {
         return type(t) + " " + name;
     }
 
-    /** Returns the default initializer for t (e.g. "0", "0.0f", "{}"). */
+    /**
+     * Returns the default initializer for t (e.g. "0", "0.0f", or "" for
+     * value-initialization of non-primitives) -- same rule as
+     * TypeResolver#defaultInit.
+     */
     public String defaultInit(IdlType t) {
         if (t instanceof IdlType.Primitive p) {
             return switch (p.kind()) {
@@ -110,10 +114,7 @@ public class CppTypeHelper {
                 default          -> "0";
             };
         }
-        if (t instanceof IdlType.Void) {
-            return "";
-        }
-        return "{}";
+        return "";
     }
 
     /** Returns the C++ return type string for an operation. */
