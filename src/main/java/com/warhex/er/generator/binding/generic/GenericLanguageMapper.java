@@ -99,6 +99,20 @@ public class GenericLanguageMapper implements LanguageMapper {
     private Set<String> currentMultiOpInterfaceNames = Set.of();
 
     /**
+     * Fully-qualified scope (no leading {@code ::}) of every
+     * {@link TemplateInstNode} rendered in the current {@link #internalMap}
+     * call, e.g. {@code FACE::TSS::CORE_Templates::Money} -- see
+     * {@link #collectTemplateInstScopes}. Same rendered-units scope as
+     * {@link #currentTemplateInstAliases}. Lets {@link #isTemplateInstSkipped}
+     * tell a type this pass generates (e.g. a model's
+     * {@code FACE::TSS::CORE_Templates::Money::TypedTS}, the actual of its
+     * {@code Injectable<>}) from a framework type under the same skip prefix
+     * (e.g. {@code FACE::TSS::Base}): the former needs an {@code #include},
+     * the latter doesn't.
+     */
+    private Set<String> currentTemplateInstScopes = Set.of();
+
+    /**
      * Lazily-instantiated legacy type helper (e.g. {@code JavaTypeHelper}).
      * Non-null only when {@link LanguageDescriptor#legacy_helper_class} is set.
      * Placed in the Velocity context as {@code $<legacy_helper_key>} so that
@@ -250,6 +264,16 @@ public class GenericLanguageMapper implements LanguageMapper {
             collectTemplateInstAliases(spec.definitions(), templateInstAliases);
         }
         this.currentTemplateInstAliases = templateInstAliases;
+
+        Set<String> templateInstScopes = new HashSet<>();
+        if (!units.isEmpty()) {
+            for (IdlFileUnit unit : units) {
+                collectTemplateInstScopes(unit.definitions(), "", templateInstScopes);
+            }
+        } else {
+            collectTemplateInstScopes(spec.definitions(), "", templateInstScopes);
+        }
+        this.currentTemplateInstScopes = templateInstScopes;
 
         // Unlike enumNames/templateInstAliases above, always collected from
         // the full merged spec, never units-restricted: the interface this
@@ -646,6 +670,23 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
     }
 
+    /**
+     * Like {@link #collectTemplateInstAliases}, but records each alias with
+     * its enclosing module chain ({@code prefix}) -- see
+     * {@link #currentTemplateInstScopes}.
+     */
+    private void collectTemplateInstScopes(List<IdlDefinition> defs, String prefix,
+                                           Set<String> scopes) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectTemplateInstScopes(m.definitions(), prefix + m.name() + "::", scopes);
+            } else if (def instanceof TemplateInstNode inst
+                    && inst.alias() != null && !inst.alias().isBlank()) {
+                scopes.add(prefix + inst.alias());
+            }
+        }
+    }
+
     // =========================================================================
     // Static files
     // =========================================================================
@@ -813,15 +854,27 @@ public class GenericLanguageMapper implements LanguageMapper {
      * Like {@link #isSkipped(String)} but uses {@code template_inst_skip_prefixes}
      * when present, falling back to {@code skip_prefixes}.  C++ uses a narrower
      * skip set for template-instantiation resolved actuals than for struct fields.
+     * Never skips a type declared inside a template instantiation this pass
+     * renders, whatever its prefix (see {@link #currentTemplateInstScopes}).
      */
     private boolean isTemplateInstSkipped(String qualifiedName) {
         if (descriptor.include_computation == null) return false;
+        if (isInRenderedTemplateInst(qualifiedName)) return false;
         List<String> prefixes = descriptor.include_computation.template_inst_skip_prefixes != null
                 ? descriptor.include_computation.template_inst_skip_prefixes
                 : descriptor.include_computation.skip_prefixes;
         if (prefixes == null) return false;
         for (String prefix : prefixes) {
             if (qualifiedName.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    /** True if an enclosing scope of {@code qualifiedName} is in {@link #currentTemplateInstScopes}. */
+    private boolean isInRenderedTemplateInst(String qualifiedName) {
+        String name = qualifiedName.startsWith("::") ? qualifiedName.substring(2) : qualifiedName;
+        for (int i = name.lastIndexOf("::"); i > 0; i = name.lastIndexOf("::", i - 1)) {
+            if (currentTemplateInstScopes.contains(name.substring(0, i))) return true;
         }
         return false;
     }

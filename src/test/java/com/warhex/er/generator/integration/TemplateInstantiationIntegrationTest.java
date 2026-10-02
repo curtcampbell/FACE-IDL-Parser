@@ -7,6 +7,7 @@ import com.warhex.er.generator.binding.TemplateInstantiator;
 import com.warhex.er.generator.binding.cpp.CppTypeHelper;
 import com.warhex.er.generator.binding.generic.LanguageDescriptorLoader;
 import com.warhex.er.generator.parser.IdlAstBuilder;
+import com.warhex.er.generator.parser.IdlDirectoryParser;
 import com.warhex.er.generator.parser.IdlParser;
 import com.warhex.er.generator.parser.IdlParseResult;
 import org.junit.jupiter.api.DisplayName;
@@ -223,6 +224,66 @@ class TemplateInstantiationIntegrationTest {
     }
 
     @Test
+    @DisplayName("C++ Injectable of a generated TypedTS includes the TypedTS header")
+    void testCppInjectableIncludesGeneratedTypedTs(@TempDir Path tempDir) throws Exception {
+        Path faceIdl = Paths.get("face-idl");
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isDirectory(faceIdl),
+                "Skipping — framework IDL not available: " + faceIdl);
+
+        // Same layout generate-tss-idl produces: a DM struct, its TypedTS
+        // instantiation, and an Injectable of that TypedTS, one file each.
+        // The Injectable's actual (FACE::TSS::SampleModel::Track::TypedTS)
+        // matches the "FACE::TSS" skip prefix but is generated here, so it
+        // needs an #include; FACE::TSS::Base is framework, so it doesn't.
+        Path idlRoot = tempDir.resolve("idl");
+        writeIdl(idlRoot.resolve("FACE/DM/SampleModel/TrackData.idl"), """
+                module FACE { module DM { module SampleModel {
+                  struct TrackData { long track_id; };
+                }; }; };
+                """);
+        writeIdl(idlRoot.resolve("FACE/TSS/SampleModel/Track/TypedTS.idl"), """
+                #include <FACE/TSS/TypedTS.idl>
+                #include <FACE/DM/SampleModel/TrackData.idl>
+                module FACE { module TSS { module SampleModel {
+                  typedef ::FACE::DM::SampleModel::TrackData TrackData_t;
+                  module ::FACE::TSS::Typed<TrackData_t> Track;
+                }; }; };
+                """);
+        writeIdl(idlRoot.resolve("FACE/TSS/SampleModel/Track/TypedTS_Injectable.idl"), """
+                #include <FACE/Injectable.idl>
+                #include <FACE/TSS/SampleModel/Track/TypedTS.idl>
+                module FACE { module TSS { module SampleModel {
+                  module ::FACE::Injectable<::FACE::TSS::SampleModel::Track::TypedTS> Track_TypedTS_Injectable;
+                }; }; };
+                """);
+        writeIdl(idlRoot.resolve("FACE/TSS/SampleModel/Base_Injectable.idl"), """
+                #include <FACE/Injectable.idl>
+                #include <FACE/TSS/Base.idl>
+                module FACE { module TSS { module SampleModel {
+                  module ::FACE::Injectable<::FACE::TSS::Base> Base_Injectable;
+                }; }; };
+                """);
+
+        IdlParseResult result = new IdlDirectoryParser(List.of(faceIdl, idlRoot)).parse(idlRoot);
+        List<LanguageMapper> cppOnly = buildMappers().stream()
+                .filter(m -> m.languageName().equals("C++"))
+                .toList();
+        new LanguageBindingPipeline(cppOnly).generate(result, tempDir.resolve("out"));
+
+        Path include = tempDir.resolve("out/cpp/include");
+        assertTrue(Files.exists(include.resolve("FACE/TSS/SampleModel/Track/TypedTS.hpp")),
+                "TypedTS header should be generated");
+        String injectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Track_TypedTS_Injectable/TypedTS_Injectable.hpp"));
+        assertTrue(injectable.contains("#include <FACE/TSS/SampleModel/Track/TypedTS.hpp>"),
+                "Injectable of a generated TypedTS must include its header:\n" + injectable);
+        String baseInjectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Base_Injectable/Base_Injectable.hpp"));
+        assertFalse(baseInjectable.contains("#include <FACE/TSS/Base.hpp>"),
+                "Framework actual FACE::TSS::Base must stay skipped:\n" + baseInjectable);
+    }
+
+    @Test
     @DisplayName("Python mapper generates template instantiation module")
     void testPythonTemplateInstOutput(@TempDir Path tempDir) throws Exception {
         org.junit.jupiter.api.Assumptions.assumeTrue(Files.exists(SAMPLE_IDL),
@@ -253,6 +314,11 @@ class TemplateInstantiationIntegrationTest {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    private static void writeIdl(Path file, String content) throws Exception {
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, content);
+    }
 
     private IdlSpecification parse(Path idlFile) throws Exception {
         IdlParser parser = new IdlParser();
