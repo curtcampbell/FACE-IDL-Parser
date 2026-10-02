@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  *   <li><b>Local interface</b> ({@code inout Read_Callback callback}) →
  *       {@code I**} (double pointer to abstract class)</li>
  *   <li><b>Interface-kind formal param</b> ({@code inout INTERFACE_TYPE ref}) →
- *       {@code T*&} (pointer reference; Injectable idiom)</li>
+ *       {@code T**} (double pointer, same as a local interface)</li>
  *   <li><b>Typename formal param</b> ({@code inout RESPONSE_DATATYPE return_data}) →
  *       {@code T&} (standard out reference; struct type)</li>
  * </ul>
@@ -57,7 +57,8 @@ public final class TemplateInstantiator {
          * Fully-qualified names of actual parameters that came from
          * {@code interface}-kind formal parameters.  Used by
          * {@link com.warhex.er.generator.binding.cpp.CppTypeHelper#paramDeclFull}
-         * to emit {@code T*&} rather than {@code T**} for {@code inout}.
+         * to recognize them as interfaces (pointer parameters, e.g. {@code T**}
+         * for {@code inout}).
          */
         public final Set<String> interfaceKindActuals;
 

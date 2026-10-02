@@ -226,15 +226,77 @@ class TemplateInstantiationIntegrationTest {
     @Test
     @DisplayName("C++ Injectable of a generated TypedTS includes the TypedTS header")
     void testCppInjectableIncludesGeneratedTypedTs(@TempDir Path tempDir) throws Exception {
+        // The Injectable's actual (FACE::TSS::SampleModel::Track::TypedTS)
+        // matches the "FACE::TSS" skip prefix but is generated here, so it
+        // needs an #include; FACE::TSS::Base is framework, so it doesn't.
+        Path include = generateTrackModelCpp(tempDir);
+
+        assertTrue(Files.exists(include.resolve("FACE/TSS/SampleModel/Track/TypedTS.hpp")),
+                "TypedTS header should be generated");
+        String injectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Track_TypedTS_Injectable/TypedTS_Injectable.hpp"));
+        assertTrue(injectable.contains("#include <FACE/TSS/SampleModel/Track/TypedTS.hpp>"),
+                "Injectable of a generated TypedTS must include its header:\n" + injectable);
+        String baseInjectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Base_Injectable/Base_Injectable.hpp"));
+        assertFalse(baseInjectable.contains("#include <FACE/TSS/Base.hpp>"),
+                "Framework actual FACE::TSS::Base must stay skipped:\n" + baseInjectable);
+    }
+
+    @Test
+    @DisplayName("C++ framework enum parameters use ::Value (RETURN_CODE_TYPE::Value&)")
+    void testCppFrameworkEnumParamsUseValue(@TempDir Path tempDir) throws Exception {
+        // FACE TS 3.2 s4.14.8.8.2 maps every IDL enum to a struct wrapping
+        // "enum Value", framework enums (FACE::RETURN_CODE_TYPE, declared in
+        // face-idl/FACE/Common.idl, not in the rendered IDL) included.
+        Path include = generateTrackModelCpp(tempDir);
+
+        for (String rel : List.of(
+                "FACE/TSS/SampleModel/Track/TypedTS.hpp",
+                "FACE/TSS/SampleModel/Track_TypedTS_Injectable/TypedTS_Injectable.hpp")) {
+            String hpp = Files.readString(include.resolve(rel));
+            assertTrue(hpp.contains("RETURN_CODE_TYPE::Value& return_code"),
+                    rel + " should declare RETURN_CODE_TYPE::Value& return_code:\n" + hpp);
+            assertFalse(hpp.contains("RETURN_CODE_TYPE& "),
+                    rel + " should have no bare RETURN_CODE_TYPE&:\n" + hpp);
+        }
+    }
+
+    @Test
+    @DisplayName("C++ inout interface-kind template actual maps to T** (Injectable::Set_Reference)")
+    void testCppInjectableInterfaceReferenceIsDoublePointer(@TempDir Path tempDir) throws Exception {
+        // OMG IDL-to-C++ / FACE TS 3.2 s4.14.8.10.2: an inout interface
+        // parameter is T**, whether the interface is local to the template
+        // body (Read_Callback) or bound to an interface-kind formal
+        // (Injectable<INTERFACE_TYPE>) -- as in the platform face-core's own
+        // Base_Injectable ("FACE::TSS::Base** interface_reference").
+        Path include = generateTrackModelCpp(tempDir);
+
+        String injectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Track_TypedTS_Injectable/TypedTS_Injectable.hpp"));
+        assertTrue(injectable.contains(
+                        "::FACE::TSS::SampleModel::Track::TypedTS** interface_reference"),
+                "generated TypedTS Injectable should take TypedTS**:\n" + injectable);
+        String baseInjectable = Files.readString(include.resolve(
+                "FACE/TSS/SampleModel/Base_Injectable/Base_Injectable.hpp"));
+        assertTrue(baseInjectable.contains("Base** interface_reference"),
+                "framework Base Injectable should take Base**:\n" + baseInjectable);
+        assertFalse(injectable.contains("*&") || baseInjectable.contains("*&"),
+                "no T*& parameters:\n" + injectable + baseInjectable);
+    }
+
+    /**
+     * Writes the layout generate-tss-idl produces for one message -- a DM
+     * struct, its TypedTS instantiation, an Injectable of that TypedTS, one
+     * file each -- plus an Injectable of the framework's FACE::TSS::Base,
+     * binds it to C++ with the framework IDL from face-idl/, and returns the
+     * generated include root.
+     */
+    private Path generateTrackModelCpp(Path tempDir) throws Exception {
         Path faceIdl = Paths.get("face-idl");
         org.junit.jupiter.api.Assumptions.assumeTrue(Files.isDirectory(faceIdl),
                 "Skipping — framework IDL not available: " + faceIdl);
 
-        // Same layout generate-tss-idl produces: a DM struct, its TypedTS
-        // instantiation, and an Injectable of that TypedTS, one file each.
-        // The Injectable's actual (FACE::TSS::SampleModel::Track::TypedTS)
-        // matches the "FACE::TSS" skip prefix but is generated here, so it
-        // needs an #include; FACE::TSS::Base is framework, so it doesn't.
         Path idlRoot = tempDir.resolve("idl");
         writeIdl(idlRoot.resolve("FACE/DM/SampleModel/TrackData.idl"), """
                 module FACE { module DM { module SampleModel {
@@ -269,18 +331,7 @@ class TemplateInstantiationIntegrationTest {
                 .filter(m -> m.languageName().equals("C++"))
                 .toList();
         new LanguageBindingPipeline(cppOnly).generate(result, tempDir.resolve("out"));
-
-        Path include = tempDir.resolve("out/cpp/include");
-        assertTrue(Files.exists(include.resolve("FACE/TSS/SampleModel/Track/TypedTS.hpp")),
-                "TypedTS header should be generated");
-        String injectable = Files.readString(include.resolve(
-                "FACE/TSS/SampleModel/Track_TypedTS_Injectable/TypedTS_Injectable.hpp"));
-        assertTrue(injectable.contains("#include <FACE/TSS/SampleModel/Track/TypedTS.hpp>"),
-                "Injectable of a generated TypedTS must include its header:\n" + injectable);
-        String baseInjectable = Files.readString(include.resolve(
-                "FACE/TSS/SampleModel/Base_Injectable/Base_Injectable.hpp"));
-        assertFalse(baseInjectable.contains("#include <FACE/TSS/Base.hpp>"),
-                "Framework actual FACE::TSS::Base must stay skipped:\n" + baseInjectable);
+        return tempDir.resolve("out/cpp/include");
     }
 
     @Test

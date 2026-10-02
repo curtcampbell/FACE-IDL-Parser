@@ -43,13 +43,10 @@ public class TypeResolver {
      * @param typedefMap  typedef alias map from {@link
      *                    com.warhex.er.generator.binding.TemplateInstantiator#typedefMap()};
      *                    may be {@code null} (treated as empty)
-     * @param enumNames   bare declarator names of enums actually rendered for
-     *                    this language (i.e. collected from the same file
-     *                    units {@code buildRenderItems}/{@code walkPerConstruct}
-     *                    walk, not the full merged spec -- static framework
-     *                    IDL like {@code FACE/Common.idl} is parsed for symbol
-     *                    resolution but never rendered, so its enums must be
-     *                    excluded here); may be {@code null} (treated as empty)
+     * @param enumNames   bare declarator names of every enum in the full
+     *                    merged spec, framework IDL (e.g. {@code
+     *                    FACE/Common.idl}'s RETURN_CODE_TYPE) included; may be
+     *                    {@code null} (treated as empty)
      */
     public TypeResolver(LanguageDescriptor descriptor, Map<String, IdlType> typedefMap,
                         Set<String> enumNames) {
@@ -233,15 +230,12 @@ public class TypeResolver {
         // (session-docs/BUG-struct-field-namespace-qualification.md).
         //
         // Step 4: append the enum-value suffix (e.g. C++'s "::Value") when the
-        // resolved name is a known, *actually-rendered* enum's wrapper-struct
-        // name. Matched on the last segment, the same convention as
-        // typedefMap's bare-name keys (queries arrive bare, unprefixed-
-        // qualified, or "::"-prefixed qualified -- see resolveTypedefTarget).
-        // enumNames deliberately excludes enums from static framework IDL
-        // (e.g. FACE::RETURN_CODE_TYPE, parsed for symbol resolution but never
-        // rendered as a wrapper struct -- BLUSH hand-implements it as a plain
-        // C++ enum) -- see the caller-side collection in
-        // GenericLanguageMapper/ContextAssembler for how that's enforced. A
+        // resolved name is a known enum's wrapper-struct name -- generated or
+        // framework (e.g. FACE::RETURN_CODE_TYPE); see the caller-side
+        // collection in GenericLanguageMapper/ContextAssembler. Matched on
+        // the last segment, the same convention as typedefMap's bare-name
+        // keys (queries arrive bare, unprefixed-qualified, or "::"-prefixed
+        // qualified -- see resolveTypedefTarget). A
         // struct sharing a simple name with an enum would collide here; not
         // currently possible given this codebase's "Kind_*_Enum" naming
         // convention, but a real constraint if that convention is ever
@@ -517,10 +511,13 @@ public class TypeResolver {
      * <p>Applies interface-type pointer semantics when the parameter type is a
      * scoped name that refers to an interface:
      * <ul>
-     *   <li>{@code in  local_iface}   → {@code "const T* name"}</li>
-     *   <li>{@code out/inout local_iface} → {@code "T** name"}</li>
-     *   <li>{@code out/inout iface_actual} → {@code "T*& name"}</li>
+     *   <li>{@code in  iface}       → {@code "const T* name"}</li>
+     *   <li>{@code out/inout iface} → {@code "T** name"}</li>
      * </ul>
+     * for an interface local to the template body (e.g. {@code Read_Callback})
+     * and one bound to an {@code interface}-kind formal alike (e.g.
+     * {@code Injectable<INTERFACE_TYPE>}'s {@code interface_reference}, as in
+     * the platform face-core's {@code FACE::TSS::Base** interface_reference}).
      * All other parameters fall through to {@link #paramDecl(ParameterNode)}.
      *
      * @param param                parameter node (type already substituted)
@@ -539,12 +536,9 @@ public class TypeResolver {
                     || interfaceKindActuals.contains(qn)
                     || interfaceKindActuals.contains(bare);
             if (isIfaceType) {
-                boolean isLocal = localInterfaces.contains(simple);
                 return switch (param.direction()) {
                     case IN         -> "const " + type(param.type()) + "* " + param.name();
-                    case OUT, INOUT -> isLocal
-                            ? type(param.type()) + "** " + param.name()
-                            : type(param.type()) + "*& "  + param.name();
+                    case OUT, INOUT -> type(param.type()) + "** " + param.name();
                 };
             }
         }
