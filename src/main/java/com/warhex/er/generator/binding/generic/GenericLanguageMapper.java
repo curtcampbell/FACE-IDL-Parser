@@ -99,6 +99,20 @@ public class GenericLanguageMapper implements LanguageMapper {
     private Set<String> currentMultiOpInterfaceNames = Set.of();
 
     /**
+     * Fully-qualified scope (no leading {@code ::}) of every
+     * {@link TemplateInstNode} rendered in the current {@link #internalMap}
+     * call, e.g. {@code FACE::TSS::CORE_Templates::Money} -- see
+     * {@link #collectTemplateInstScopes}. Same rendered-units scope as
+     * {@link #currentTemplateInstAliases}. Lets {@link #isTemplateInstSkipped}
+     * tell a type this pass generates (e.g. a model's
+     * {@code FACE::TSS::CORE_Templates::Money::TypedTS}, the actual of its
+     * {@code Injectable<>}) from a framework type under the same skip prefix
+     * (e.g. {@code FACE::TSS::Base}): the former needs an {@code #include},
+     * the latter doesn't.
+     */
+    private Set<String> currentTemplateInstScopes = Set.of();
+
+    /**
      * Lazily-instantiated legacy type helper (e.g. {@code JavaTypeHelper}).
      * Non-null only when {@link LanguageDescriptor#legacy_helper_class} is set.
      * Placed in the Velocity context as {@code $<legacy_helper_key>} so that
@@ -220,27 +234,18 @@ public class GenericLanguageMapper implements LanguageMapper {
         List<IdlFileUnit> units = result.fileUnits();
 
         // Build type resolver with typedef chain support. enumNames is
-        // collected from the same definitions that actually get rendered
-        // (file units when present, else the full spec) -- NOT the full
-        // merged spec unconditionally -- because that also includes static
-        // framework IDL (FACE/Common.idl, FACE/TSS/Common.idl) parsed for
-        // symbol resolution but never rendered as a wrapper struct. Its
-        // enums (e.g. RETURN_CODE_TYPE) are commonly hand-implemented as a
-        // plain C++ enum instead, so TypeResolver must not treat them as
-        // needing the enum_value_suffix (session-docs/BUG-struct-field-namespace-qualification.md,
-        // Bug #7).
+        // collected from the full merged spec, framework IDL included: FACE
+        // TS 3.2 s4.14.8.8.2 maps every IDL enum to a struct wrapping "enum
+        // Value", so a framework enum such as FACE::RETURN_CODE_TYPE (from
+        // face-idl/FACE/Common.idl, never rendered here -- face-core provides
+        // it) still needs the enum_value_suffix wherever it is used
+        // (RETURN_CODE_TYPE::Value&), matching the platform face-core.
         Set<String> enumNames = new HashSet<>();
-        if (!units.isEmpty()) {
-            for (IdlFileUnit unit : units) {
-                collectEnumNames(unit.definitions(), enumNames);
-            }
-        } else {
-            collectEnumNames(spec.definitions(), enumNames);
-        }
+        collectEnumNames(spec.definitions(), enumNames);
 
-        // Same rendered-vs-merged-spec distinction as enumNames above, for the
-        // same reason: only aliases that are actually (going to be) rendered
-        // in this pass are relevant to $templateInstAliases.
+        // Collected from the definitions actually rendered (file units when
+        // present, else the full spec): only aliases that are (going to be)
+        // rendered in this pass are relevant to $templateInstAliases.
         Set<String> templateInstAliases = new HashSet<>();
         if (!units.isEmpty()) {
             for (IdlFileUnit unit : units) {
@@ -251,12 +256,21 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
         this.currentTemplateInstAliases = templateInstAliases;
 
-        // Unlike enumNames/templateInstAliases above, always collected from
-        // the full merged spec, never units-restricted: the interface this
-        // exists for (e.g. FACE::TSS::TypedTS) is declared exactly once in
-        // static framework IDL (face-idl/FACE/TSS/TypedTS.idl) -- parsed for
-        // symbol resolution like the framework enums enumNames excludes,
-        // but (unlike those enums) genuinely rendered here, just always via
+        Set<String> templateInstScopes = new HashSet<>();
+        if (!units.isEmpty()) {
+            for (IdlFileUnit unit : units) {
+                collectTemplateInstScopes(unit.definitions(), "", templateInstScopes);
+            }
+        } else {
+            collectTemplateInstScopes(spec.definitions(), "", templateInstScopes);
+        }
+        this.currentTemplateInstScopes = templateInstScopes;
+
+        // Unlike templateInstAliases above, always collected from the full
+        // merged spec, never units-restricted: the interface this exists for
+        // (e.g. FACE::TSS::TypedTS) is declared exactly once in static
+        // framework IDL (face-idl/FACE/TSS/TypedTS.idl) -- parsed for symbol
+        // resolution, and genuinely rendered here, just always via
         // instantiation rather than as a standalone construct of its own.
         // Restricting to units would make this collection permanently miss
         // exactly the interfaces it exists to catch. typedefMap has the same
@@ -646,6 +660,23 @@ public class GenericLanguageMapper implements LanguageMapper {
         }
     }
 
+    /**
+     * Like {@link #collectTemplateInstAliases}, but records each alias with
+     * its enclosing module chain ({@code prefix}) -- see
+     * {@link #currentTemplateInstScopes}.
+     */
+    private void collectTemplateInstScopes(List<IdlDefinition> defs, String prefix,
+                                           Set<String> scopes) {
+        for (IdlDefinition def : defs) {
+            if (def instanceof ModuleNode m) {
+                collectTemplateInstScopes(m.definitions(), prefix + m.name() + "::", scopes);
+            } else if (def instanceof TemplateInstNode inst
+                    && inst.alias() != null && !inst.alias().isBlank()) {
+                scopes.add(prefix + inst.alias());
+            }
+        }
+    }
+
     // =========================================================================
     // Static files
     // =========================================================================
@@ -813,15 +844,27 @@ public class GenericLanguageMapper implements LanguageMapper {
      * Like {@link #isSkipped(String)} but uses {@code template_inst_skip_prefixes}
      * when present, falling back to {@code skip_prefixes}.  C++ uses a narrower
      * skip set for template-instantiation resolved actuals than for struct fields.
+     * Never skips a type declared inside a template instantiation this pass
+     * renders, whatever its prefix (see {@link #currentTemplateInstScopes}).
      */
     private boolean isTemplateInstSkipped(String qualifiedName) {
         if (descriptor.include_computation == null) return false;
+        if (isInRenderedTemplateInst(qualifiedName)) return false;
         List<String> prefixes = descriptor.include_computation.template_inst_skip_prefixes != null
                 ? descriptor.include_computation.template_inst_skip_prefixes
                 : descriptor.include_computation.skip_prefixes;
         if (prefixes == null) return false;
         for (String prefix : prefixes) {
             if (qualifiedName.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    /** True if an enclosing scope of {@code qualifiedName} is in {@link #currentTemplateInstScopes}. */
+    private boolean isInRenderedTemplateInst(String qualifiedName) {
+        String name = qualifiedName.startsWith("::") ? qualifiedName.substring(2) : qualifiedName;
+        for (int i = name.lastIndexOf("::"); i > 0; i = name.lastIndexOf("::", i - 1)) {
+            if (currentTemplateInstScopes.contains(name.substring(0, i))) return true;
         }
         return false;
     }

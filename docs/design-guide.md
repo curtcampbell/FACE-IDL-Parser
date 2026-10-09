@@ -387,7 +387,7 @@ Steps:
 |---|---|---|---|
 | `definitions` | `List<IdlDefinition>` | `$resolved.definitions` | Substituted interface/struct bodies |
 | `localInterfaceNames` | `Set<String>` | `$resolved.localInterfaceNames` | Interface names from template body |
-| `interfaceKindActuals` | `Set<String>` | (internal) | Determines `T*&` vs `T**` for `inout` params |
+| `interfaceKindActuals` | `Set<String>` | (internal) | Marks actuals bound to interface-kind formals as interfaces (`T**` for `inout` params) |
 | `resolvedActuals` | `List<IdlType>` | `$resolved.resolvedActuals` | Concrete actual types in formal order |
 
 ---

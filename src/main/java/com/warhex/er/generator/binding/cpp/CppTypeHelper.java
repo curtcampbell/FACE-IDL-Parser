@@ -98,7 +98,11 @@ public class CppTypeHelper {
         return type(t) + " " + name;
     }
 
-    /** Returns the default initializer for t (e.g. "0", "0.0f", "{}"). */
+    /**
+     * Returns the default initializer for t (e.g. "0", "0.0f", or "" for
+     * value-initialization of non-primitives) -- same rule as
+     * TypeResolver#defaultInit.
+     */
     public String defaultInit(IdlType t) {
         if (t instanceof IdlType.Primitive p) {
             return switch (p.kind()) {
@@ -110,10 +114,7 @@ public class CppTypeHelper {
                 default          -> "0";
             };
         }
-        if (t instanceof IdlType.Void) {
-            return "";
-        }
-        return "{}";
+        return "";
     }
 
     /** Returns the C++ return type string for an operation. */
@@ -147,8 +148,8 @@ public class CppTypeHelper {
      * OMG IDL-to-C++ Language Mapping §5.16.3.3 / FACE TS 3.2 §4.14.8.10.2:
      * <ul>
      *   <li>{@code in interface_type}    → {@code const T* name}</li>
-     *   <li>{@code out interface_type}   → {@code T*& name}</li>
-     *   <li>{@code inout interface_type} → {@code T*& name}</li>
+     *   <li>{@code out interface_type}   → {@code T** name}</li>
+     *   <li>{@code inout interface_type} → {@code T** name}</li>
      * </ul>
      *
      * An interface-typed parameter is detected when the (post-substitution) type
@@ -178,14 +179,9 @@ public class CppTypeHelper {
                     || interfaceKindActuals.contains(bare);
 
             if (isIfaceType) {
-                // Local-interface inout/out → double-pointer (I**) per TemplateInstantiator doc.
-                // Interface-kind-actual inout/out → pointer-reference (T*&, Injectable idiom).
-                boolean isLocal = localInterfaces.contains(simple);
                 return switch (param.direction()) {
                     case IN    -> "const " + type(param.type()) + "* " + param.name();
-                    case OUT, INOUT -> isLocal
-                            ? type(param.type()) + "** "  + param.name()
-                            : type(param.type()) + "*& " + param.name();
+                    case OUT, INOUT -> type(param.type()) + "** " + param.name();
                 };
             }
         }
